@@ -7,6 +7,21 @@
 
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* ── Smooth scroll (§5.6) — pointer devices only; native on touch, where
+        synthetic smoothing is the fastest way to feel broken. ──────────── */
+  var lenis = null;
+  var finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if (!reduced && finePointer && typeof Lenis !== 'undefined') {
+    lenis = new Lenis({
+      lerp: 0.085,
+      wheelMultiplier: 0.9,
+      smoothWheel: true,
+      syncTouch: false
+    });
+    (function raf(t) { lenis.raf(t); requestAnimationFrame(raf); })(0);
+    lenis.on('scroll', function () { onScroll(); });
+  }
+
   /* ── Preloader ────────────────────────────────────────────────────── */
   function dismissPreloader() {
     var p = document.getElementById('preloader');
@@ -132,21 +147,47 @@
     splitLines(h);
   });
 
-  /* ── Reveal observer ──────────────────────────────────────────────── */
-  var revealTargets = document.querySelectorAll('[data-reveal], [data-reveal-lines]');
+  /* ── Reveal ────────────────────────────────────────────────────────
+     Content visibility must never depend on an animation firing. The
+     observer drives the nice entrance; a sweep guarantees that anything
+     on screen is visible regardless. A section that fails to reveal is an
+     empty section, which is worse than no animation at all. ──────────── */
+  var revealTargets = Array.prototype.slice.call(
+    document.querySelectorAll('[data-reveal], [data-reveal-lines]')
+  );
 
+  function show(el) {
+    if (el.classList.contains('is-in')) return;
+    el.classList.add('is-in');
+    runCounters(el);
+  }
+
+  function sweep() {
+    var vh = window.innerHeight;
+    for (var i = 0; i < revealTargets.length; i++) {
+      var el = revealTargets[i];
+      if (el.classList.contains('is-in')) continue;
+      var r = el.getBoundingClientRect();
+      if (r.top < vh * 0.92 && r.bottom > 0) show(el);
+    }
+  }
+
+  var io = null;
   if (reduced || !('IntersectionObserver' in window)) {
-    revealTargets.forEach(function (el) { el.classList.add('is-in'); runCounters(el); });
+    revealTargets.forEach(show);
   } else {
-    var io = new IntersectionObserver(function (entries) {
+    io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
         if (!e.isIntersecting) return;
-        e.target.classList.add('is-in');
-        runCounters(e.target);
-        io.unobserve(e.target);          // play once — never replay on scroll-up
+        show(e.target);
+        io.unobserve(e.target);
       });
-    }, { rootMargin: '0px 0px -15% 0px', threshold: 0.01 });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0 });
     revealTargets.forEach(function (el) { io.observe(el); });
+
+    // belt and braces: on load, on scroll, and a few timed passes
+    window.addEventListener('load', function () { sweep(); setTimeout(sweep, 300); });
+    [120, 600, 1500, 3000].forEach(function (t) { setTimeout(sweep, t); });
   }
 
   /* ── Count-up (§5.5 — locks once counted) ─────────────────────────── */
@@ -182,6 +223,7 @@
 
   function onScroll() {
     onScrollNav();
+    if (typeof sweep === 'function') sweep();
 
     var h = document.documentElement.scrollHeight - window.innerHeight;
     var prog = h > 0 ? Math.min(1, Math.max(0, window.scrollY / h)) : 0;
@@ -228,7 +270,8 @@
       var t = document.querySelector(id);
       if (!t) return;
       ev.preventDefault();
-      t.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+      if (lenis) lenis.scrollTo(t, { offset: 0, duration: 1.2 });
+      else t.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
     });
   });
 })();
