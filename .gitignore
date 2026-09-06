@@ -4,6 +4,9 @@ _research/tmp/
 _research/shots/
 _research/assets/
 _research/raw/
+_research/gltf/scene.bin
+_research/gltf/
+!_research/gltf/license.txt
 
 # duplicate of assets/burj.glb
 prototype/*.glb
