@@ -1,0 +1,259 @@
+[
+  {
+    "slug": "burj-al-arab",
+    "orig": [
+      1800,
+      2700
+    ],
+    "widths": [
+      640,
+      1280
+    ]
+  },
+  {
+    "slug": "burj-minimal-dusk",
+    "orig": [
+      2560,
+      1920
+    ],
+    "widths": [
+      640,
+      1280,
+      1920,
+      2560
+    ]
+  },
+  {
+    "slug": "burj-portrait",
+    "orig": [
+      1800,
+      2699
+    ],
+    "widths": [
+      640,
+      1280
+    ]
+  },
+  {
+    "slug": "downtown-night",
+    "orig": [
+      3000,
+      2250
+    ],
+    "widths": [
+      640,
+      1280,
+      1920,
+      2560
+    ]
+  },
+  {
+    "slug": "dusk-wide",
+    "orig": [
+      3000,
+      2000
+    ],
+    "widths": [
+      640,
+      1280,
+      1920,
+      2560
+    ]
+  },
+  {
+    "slug": "fac-circular-bw",
+    "orig": [
+      1800,
+      2250
+    ],
+    "widths": [
+      640,
+      1280
+    ]
+  },
+  {
+    "slug": "fac-lattice",
+    "orig": [
+      2560,
+      1706
+    ],
+    "widths": [
+      640,
+      1280,
+      1920,
+      2560
+    ]
+  },
+  {
+    "slug": "fac-navy-minimal",
+    "orig": [
+      1800,
+      2700
+    ],
+    "widths": [
+      640,
+      1280
+    ]
+  },
+  {
+    "slug": "fac-spiral-bronze",
+    "orig": [
+      1800,
+      2695
+    ],
+    "widths": [
+      640,
+      1280
+    ]
+  },
+  {
+    "slug": "hero-night-skyline",
+    "orig": [
+      3000,
+      2000
+    ],
+    "widths": [
+      640,
+      1280,
+      1920,
+      2560
+    ]
+  },
+  {
+    "slug": "int-bedroom-dark",
+    "orig": [
+      2560,
+      1440
+    ],
+    "widths": [
+      640,
+      1280,
+      1920,
+      2560
+    ]
+  },
+  {
+    "slug": "int-bedroom-moody",
+    "orig": [
+      1800,
+      2250
+    ],
+    "widths": [
+      640,
+      1280
+    ]
+  },
+  {
+    "slug": "int-living-soft",
+    "orig": [
+      2560,
+      2560
+    ],
+    "widths": [
+      640,
+      1280,
+      1920,
+      2560
+    ]
+  },
+  {
+    "slug": "int-living-warm",
+    "orig": [
+      2560,
+      1440
+    ],
+    "widths": [
+      640,
+      1280,
+      1920,
+      2560
+    ]
+  },
+  {
+    "slug": "int-penthouse-dusk",
+    "orig": [
+      2560,
+      1440
+    ],
+    "widths": [
+      640,
+      1280,
+      1920,
+      2560
+    ]
+  },
+  {
+    "slug": "marina-aerial",
+    "orig": [
+      1800,
+      3139
+    ],
+    "widths": [
+      640,
+      1280
+    ]
+  },
+  {
+    "slug": "marina-moody",
+    "orig": [
+      1800,
+      2700
+    ],
+    "widths": [
+      640,
+      1280
+    ]
+  },
+  {
+    "slug": "palm-aerial",
+    "orig": [
+      2560,
+      1920
+    ],
+    "widths": [
+      640,
+      1280,
+      1920,
+      2560
+    ]
+  },
+  {
+    "slug": "skyline-dark",
+    "orig": [
+      2560,
+      1707
+    ],
+    "widths": [
+      640,
+      1280,
+      1920,
+      2560
+    ]
+  },
+  {
+    "slug": "skyline-teal",
+    "orig": [
+      2560,
+      1707
+    ],
+    "widths": [
+      640,
+      1280,
+      1920,
+      2560
+    ]
+  },
+  {
+    "slug": "storm-downtown",
+    "orig": [
+      2560,
+      1664
+    ],
+    "widths": [
+      640,
+      1280,
+      1920,
+      2560
+    ]
+  }
+]
