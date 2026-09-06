@@ -8,7 +8,7 @@
 <!--
   REAL ESTATE BY UMER — PROTOTYPE · HERO V2 · "BLUE HOUR OVER DOWNTOWN"
   three.js 0.180.0 from cdnjs (core only — the GLB is parsed by a 60-line loader below, so no addons).
-  Loads ../assets/burj.glb (Sketchfab, CC-BY, 661k tris, materials "Rebord" / "Vitres"). Serve over http:
+  Loads ../assets/burj.opt.glb (Sketchfab, CC-BY, 661k tris, materials "Rebord" / "Vitres"). Serve over http:
   http://127.0.0.1:5173/prototype/hero-v2.html  (fetch() cannot read file:// URLs).
 
   WHY THE OLD BACKGROUND FAILED (see REVIEW.md §A)
@@ -395,7 +395,7 @@ async function bringTheTower() {
   let root;
   try {
     if (NOMODEL) throw new Error('nomodel');
-    root = await loadGLB('../assets/burj.glb', p => { hint.textContent = `Loading the tower · ${Math.round(p * 100)}%`; });
+    root = await loadGLB('../assets/burj.opt.glb', p => { hint.textContent = `Loading the tower · ${Math.round(p * 100)}%`; });
   } catch (e) { console.warn('[hero-v2] GLB unavailable, using the stand-in massing', e); root = standIn(); }
   fitTower(root); tower.add(root);
   const rebord = []; root.traverse(o => { if (o.isMesh && o.material === facade) rebord.push(o); });

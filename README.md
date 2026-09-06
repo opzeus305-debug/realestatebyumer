@@ -74,3 +74,22 @@ The canvas is hidden and the renderer stopped once the hero leaves the screen.
   (see `_research/INVENTORY.md`)
 - Replace `assets/lens/` with versions free of the "rawr." sticker
 - Remaining items on the ordered fix list in [`REVIEW.md`](REVIEW.md) §B.11
+
+## Credits
+
+3D model: ["( FREE ) Burj Khalifa Dubai"](https://sketchfab.com/3d-models/free-burj-khalifa-dubai-c1d6f5884c9c4a56b8d8f9c5555f1902)
+by [SDC PERFORMANCE™](https://sketchfab.com/3Duae), licensed
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). **Attribution is a
+condition of this licence** — the credit in the site footer must not be removed.
+
+The model ships optimised: indices narrowed from uint32 to uint16 (every
+primitive is under 65,536 vertices), which is lossless and takes it from
+22.7MB to 18.9MB, then gzipped to **4.1MB**. `js/scene.js` inflates it in the
+browser with `DecompressionStream`, so no host configuration is required, and
+falls back to the plain file where that API is missing. Rebuild with
+`python _research/optimize_glb.py`.
+
+Sky: `assets/img/sky-dusk.webp` — a seamless equirectangular dusk sky built
+from `assets/stock/dusk-wide.jpg` (Unsplash) by `_research/make_sky.py`. It is
+both the visible sky and the reflection environment, so the tower's aluminium
+mirrors real cloud rather than a shader ramp.
