@@ -103,32 +103,56 @@ const lightMats = [];
 function makeLights(pos, cols, seeds, size, tint) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('aCol', new THREE.Float32BufferAttribute(cols, 3)); g.setAttribute('aSeed', new THREE.Float32BufferAttribute(seeds, 1));
   const m = new THREE.ShaderMaterial({ ...lightShader, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { uTime: { value: 0 }, uSize: { value: size }, uFogD: { value: 0.012 }, uTint: { value: tint } } }); lightMats.push(m); const p = new THREE.Points(g, m); p.frustumCulled = false; scene.add(p); return p; }
 
-/* ── the base: podium island · Burj Lake · promenade with lamps · dark land ── */
-const land = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshStandardMaterial({ color: col(0x0C0D14), roughness: 0.85, metalness: 0.05, envMapIntensity: 0.4 })); land.rotation.x = -Math.PI / 2; land.position.y = -0.03; scene.add(land);
-const podium = new THREE.Mesh(new THREE.CylinderGeometry(1.95, 2.05, 0.08, 48), new THREE.MeshStandardMaterial({ color: col(0x1A1B22), roughness: 0.78, metalness: 0.08 })); podium.position.y = 0.04; scene.add(podium);
-const LAKE_R = 5.6;
+/* ── the ground ────────────────────────────────────────────────────────
+   No podium, no lake disc, no promenade ring, no lamp circle, no light pool.
+   Every one of those has an edge, and an edge turns the tower into a model on
+   a display base under a spotlight — which is exactly how it read.
+
+   Instead: one dark, faintly wet plane that runs out to the fog and never
+   ends, taking the dusk sky at grazing angles the way wet ground does. The
+   tower's base falls into shadow and haze rather than standing on a lit disc.
+   ------------------------------------------------------------------------ */
 let water = null, rippleTex = null, reflection = null;
 function gradTex(w, h, paint) { const c = document.createElement('canvas'); c.width = w; c.height = h; paint(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); return t; }
-if (BASE === 'lake') {
-  // long-wavelength ripples, tiny amplitude: a normal map baked from two sine fields
-  rippleTex = (() => { const N = 256, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d'), img = g.createImageData(N, N);
-    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const u = x / N * 6.283, v = y / N * 6.283; const dx = Math.cos(u * 3) * 0.6 + Math.cos(u * 5 + v * 2) * 0.4, dy = Math.cos(v * 4) * 0.6 + Math.cos(v * 7 - u * 3) * 0.4; const i = (y * N + x) * 4; img.data[i] = 128 + dx * 40; img.data[i + 1] = 128 + dy * 40; img.data[i + 2] = 255; img.data[i + 3] = 255; }
-    g.putImageData(img, 0, 0); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(6, 6); return t; })();
-  water = new THREE.Mesh(new THREE.CircleGeometry(LAKE_R, 96), new THREE.MeshPhysicalMaterial({ color: col(0x05070C), metalness: 0.0, roughness: 0.06, ior: 1.33, specularIntensity: 1.0, envMapIntensity: 1.1, transparent: true, opacity: 0.6, normalMap: rippleTex, normalScale: new THREE.Vector2(0.05, 0.05) }));
-  water.rotation.x = -Math.PI / 2; water.position.y = 0.0; water.renderOrder = 2; scene.add(water);
-  // the promenade ring and its lamps
-  const prom = new THREE.Mesh(new THREE.RingGeometry(LAKE_R, LAKE_R + 0.5, 128), new THREE.MeshStandardMaterial({ color: col(0x15161D), roughness: 0.8 })); prom.rotation.x = -Math.PI / 2; prom.position.y = 0.045; scene.add(prom);
-  const kerb = new THREE.Mesh(new THREE.CylinderGeometry(LAKE_R + 0.02, LAKE_R + 0.02, 0.05, 128, 1, true), new THREE.MeshStandardMaterial({ color: col(0x1E1F27), roughness: 0.7, side: THREE.DoubleSide })); kerb.position.y = 0.025; scene.add(kerb);
-  const lampPos = [], lampCol = [], lampSeed = []; for (let i = 0; i < 150; i++) { const a = i / 150 * Math.PI * 2; lampPos.push(Math.cos(a) * (LAKE_R + 0.22), 0.16, Math.sin(a) * (LAKE_R + 0.22)); lampCol.push(0.98, 0.84, 0.62); lampSeed.push(Math.random()); }
-  makeLights(lampPos, lampCol, lampSeed, 36, col(0xFFFFFF, 0.9));
-  // the reflection dissolves toward the island (a dark gradient sheet just above the water)
-  const dissolve = new THREE.Mesh(new THREE.CircleGeometry(2.8, 64), new THREE.MeshBasicMaterial({ map: gradTex(256, 256, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, 'rgba(6,8,13,0.6)'); gr.addColorStop(0.5, 'rgba(6,8,13,0.25)'); gr.addColorStop(1, 'rgba(6,8,13,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); }), transparent: true, depthWrite: false, fog: false }));
-  dissolve.rotation.x = -Math.PI / 2; dissolve.position.y = 0.004; dissolve.renderOrder = 3; scene.add(dissolve);
-} else {
-  const plaza = new THREE.Mesh(new THREE.CircleGeometry(LAKE_R, 96), new THREE.MeshStandardMaterial({ color: col(0x131419), roughness: 0.76, metalness: 0.06, envMapIntensity: 0.5 })); plaza.rotation.x = -Math.PI / 2; plaza.position.y = 0.001; scene.add(plaza);
-}
-const pool = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.MeshBasicMaterial({ map: gradTex(256, 256, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, 'rgba(240,215,170,0.5)'); gr.addColorStop(0.4, 'rgba(240,215,170,0.14)'); gr.addColorStop(1, 'rgba(240,215,170,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); }), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
-pool.rotation.x = -Math.PI / 2; pool.position.y = 0.09; pool.renderOrder = 3; scene.add(pool);
+
+// long-wavelength ripple: enough to break the mirror, never enough to sparkle
+rippleTex = (() => {
+  const N = 256, c = document.createElement('canvas'); c.width = c.height = N;
+  const g = c.getContext('2d'), img = g.createImageData(N, N);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const u = x / N * 6.283, v = y / N * 6.283;
+    const dx = Math.cos(u * 2) * 0.6 + Math.cos(u * 3 + v) * 0.4;
+    const dy = Math.cos(v * 2) * 0.6 + Math.cos(v * 3 + u) * 0.4;
+    const i = (y * N + x) * 4;
+    img.data[i] = 128 + dx * 12; img.data[i + 1] = 128 + dy * 12;
+    img.data[i + 2] = 255; img.data[i + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(14, 14);
+  return t;
+})();
+
+const land = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400), new THREE.MeshStandardMaterial({
+  color: col(0x070810), roughness: 0.30, metalness: 0.42, envMapIntensity: 0.85,
+  normalMap: rippleTex, normalScale: new THREE.Vector2(0.05, 0.05),
+}));
+land.rotation.x = -Math.PI / 2; land.position.y = 0; scene.add(land);
+water = land;                       // the ripple animator drives this
+
+/* A soft contact shadow, not a spotlight: the ground DARKENS under the tower,
+   so the building is seated rather than lit from below like an exhibit. */
+const contact = new THREE.Mesh(new THREE.PlaneGeometry(26, 26), new THREE.MeshBasicMaterial({
+  map: gradTex(256, 256, (g, w, h) => {
+    const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+    gr.addColorStop(0.00, 'rgba(2,3,6,0.92)');
+    gr.addColorStop(0.22, 'rgba(3,4,8,0.66)');
+    gr.addColorStop(0.55, 'rgba(4,5,10,0.26)');
+    gr.addColorStop(1.00, 'rgba(6,7,12,0)');
+  }),
+  transparent: true, depthWrite: false, fog: false,
+}));
+contact.rotation.x = -Math.PI / 2; contact.position.y = 0.006; contact.renderOrder = 2; scene.add(contact);
 
 /* ── lights — the rig ── */
 scene.add(new THREE.HemisphereLight(0x2E3560, 0x0A0B10, 0.7));
