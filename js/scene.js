@@ -22,7 +22,7 @@ const scene = new THREE.Scene(); const camera = new THREE.PerspectiveCamera(36, 
 
 /* ── sky dome (from hero-v2) — physically ordered dusk, no stars ── */
 const SUN = new THREE.Vector3(-0.72, -0.08, -0.69).normalize();
-const skyMat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, fog: false, uniforms: { cZenith: { value: col(0x0A0D1B) }, cUpper: { value: col(0x141A36) }, cLower: { value: col(0x262C4E) }, cDusk: { value: col(0x524862) }, cHorizon: { value: col(0x936F50) }, cBelow: { value: col(0x0A0B12) }, uSun: { value: SUN } },
+const skyMat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, fog: false, uniforms: { cZenith: { value: col(0x0A0D1B) }, cUpper: { value: col(0x141A36) }, cLower: { value: col(0x262C4E) }, cDusk: { value: col(0x4A4360) }, cHorizon: { value: col(0x7E604A) }, cBelow: { value: col(0x0A0B12) }, uSun: { value: SUN } },
   vertexShader: `varying vec3 vDir; void main(){ vDir = (modelMatrix * vec4(position,1.)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }`,
   fragmentShader: `uniform vec3 cZenith,cUpper,cLower,cDusk,cHorizon,cBelow,uSun; varying vec3 vDir;
     void main(){ vec3 d = normalize(vDir); float e = d.y; float warm = pow(0.5 + 0.5*dot(normalize(vec3(d.x,0.,d.z)), normalize(vec3(uSun.x,0.,uSun.z))), 1.6);
@@ -32,6 +32,9 @@ const skyMat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: fals
 const sky = new THREE.Mesh(new THREE.SphereGeometry(500, 48, 24), skyMat); sky.renderOrder = -10; scene.add(sky);
 (function () { const s = new THREE.Scene(); s.add(sky.clone()); const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromScene(s, 0.04).texture; pm.dispose(); })();
 scene.fog = new THREE.FogExp2(col(0x2A2C45).getHex(), 0.012);
+/* a far haze band so land and sky meet in air, not on a line */
+{ const c = document.createElement('canvas'); c.width = 4; c.height = 128; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 128); gr.addColorStop(0, 'rgba(58,58,84,0)'); gr.addColorStop(0.55, 'rgba(58,58,84,0.55)'); gr.addColorStop(1, 'rgba(58,58,84,0.9)'); g.fillStyle = gr; g.fillRect(0, 0, 4, 128);
+  const t = new THREE.CanvasTexture(c); const band = new THREE.Mesh(new THREE.CylinderGeometry(180, 180, 7, 96, 1, true), new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, side: THREE.BackSide, fog: false })); band.position.y = 3.2; scene.add(band); }
 
 /* ── shared shader helpers injected via onBeforeCompile ── */
 const GLSL_HASH = `float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }`;
@@ -53,12 +56,12 @@ function injectCommon(mat, opts) {                    // opts: { saa, brush, ao,
         { float hh = clamp(vWP.y / uH, 0.0, 1.0);
           ${opts.bands ? `float fl = vWP.y * 9.0; float b = fract(fl); float w = fwidth(fl); float lit = smoothstep(0.62 - w, 0.70 + w, b) * (1.0 - smoothstep(0.80 - w, 0.90 + w, b)); lit = mix(0.25, lit, 1.0 - smoothstep(0.4, 1.4, w)); lit *= mix(1.0, 0.35, smoothstep(0.55, 1.0, hh)); totalEmissiveRadiance += uBand * lit * 0.22;` : ''}
           ${opts.windows ? `float fy = vWP.y * 38.0; float storey = floor(fy); float ang = atan(vWP.z, vWP.x); float bay = floor(ang * 14.0); vec2 id = vec2(storey, bay);
-            float p = 0.50 - 0.28 * hh; float on = step(h21(id), p); float warm = step(0.3, h21(id + 7.0));
-            float fw = max(fwidth(fy), fwidth(ang * 14.0)); float aa = 1.0 - smoothstep(0.5, 1.8, fw);
+            float p = 0.24 - 0.14 * hh; float on = step(h21(id), p); float warm = step(0.3, h21(id + 7.0));
+            float fw = max(fwidth(fy), fwidth(ang * 14.0)); float aa = 1.0 - smoothstep(0.25, 0.9, fw);      // storeys under ~4px blend to their average glow
             float inPane = smoothstep(0.08, 0.2, fract(fy)) * (1.0 - smoothstep(0.82, 0.94, fract(fy)));
-            float lit = mix(p * 0.55, on * inPane, aa);
+            float lit = mix(p * 0.5, on * inPane, aa);
             float breathe = 0.92 + 0.08 * sin(uTime * (0.3 + h21(id + 3.0) * 0.5) + h21(id) * 40.0);
-            totalEmissiveRadiance += mix(uCool, uWarm, warm) * lit * breathe * 0.55;` : ''} }`)
+            totalEmissiveRadiance += mix(uCool, uWarm, warm) * lit * breathe * 0.42;` : ''} }`)
       .replace('#include <fog_fragment>', `#include <fog_fragment>
         ${opts.haze ? `{ float hh = clamp(vWP.y / uH, 0.0, 1.0); gl_FragColor.rgb = mix(gl_FragColor.rgb, uHaze, smoothstep(0.35, 1.0, hh) * 0.11); }` : ''}`);
     mat.userData.shader = sh;
@@ -92,7 +95,7 @@ if (BASE === 'lake') {
   rippleTex = (() => { const N = 256, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d'), img = g.createImageData(N, N);
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const u = x / N * 6.283, v = y / N * 6.283; const dx = Math.cos(u * 3) * 0.6 + Math.cos(u * 5 + v * 2) * 0.4, dy = Math.cos(v * 4) * 0.6 + Math.cos(v * 7 - u * 3) * 0.4; const i = (y * N + x) * 4; img.data[i] = 128 + dx * 40; img.data[i + 1] = 128 + dy * 40; img.data[i + 2] = 255; img.data[i + 3] = 255; }
     g.putImageData(img, 0, 0); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(6, 6); return t; })();
-  water = new THREE.Mesh(new THREE.CircleGeometry(LAKE_R, 96), new THREE.MeshPhysicalMaterial({ color: col(0x05070C), metalness: 0.0, roughness: 0.06, ior: 1.33, specularIntensity: 1.0, envMapIntensity: 1.0, transparent: true, opacity: 0.74, normalMap: rippleTex, normalScale: new THREE.Vector2(0.05, 0.05) }));
+  water = new THREE.Mesh(new THREE.CircleGeometry(LAKE_R, 96), new THREE.MeshPhysicalMaterial({ color: col(0x05070C), metalness: 0.0, roughness: 0.06, ior: 1.33, specularIntensity: 1.0, envMapIntensity: 1.1, transparent: true, opacity: 0.6, normalMap: rippleTex, normalScale: new THREE.Vector2(0.05, 0.05) }));
   water.rotation.x = -Math.PI / 2; water.position.y = 0.0; water.renderOrder = 2; scene.add(water);
   // the promenade ring and its lamps
   const prom = new THREE.Mesh(new THREE.RingGeometry(LAKE_R, LAKE_R + 0.5, 128), new THREE.MeshStandardMaterial({ color: col(0x15161D), roughness: 0.8 })); prom.rotation.x = -Math.PI / 2; prom.position.y = 0.045; scene.add(prom);
@@ -100,7 +103,7 @@ if (BASE === 'lake') {
   const lampPos = [], lampCol = [], lampSeed = []; for (let i = 0; i < 150; i++) { const a = i / 150 * Math.PI * 2; lampPos.push(Math.cos(a) * (LAKE_R + 0.22), 0.16, Math.sin(a) * (LAKE_R + 0.22)); lampCol.push(0.98, 0.84, 0.62); lampSeed.push(Math.random()); }
   makeLights(lampPos, lampCol, lampSeed, 36, col(0xFFFFFF, 0.9));
   // the reflection dissolves toward the island (a dark gradient sheet just above the water)
-  const dissolve = new THREE.Mesh(new THREE.CircleGeometry(3.6, 64), new THREE.MeshBasicMaterial({ map: gradTex(256, 256, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, 'rgba(6,8,13,0.9)'); gr.addColorStop(0.45, 'rgba(6,8,13,0.45)'); gr.addColorStop(1, 'rgba(6,8,13,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); }), transparent: true, depthWrite: false, fog: false }));
+  const dissolve = new THREE.Mesh(new THREE.CircleGeometry(2.8, 64), new THREE.MeshBasicMaterial({ map: gradTex(256, 256, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, 'rgba(6,8,13,0.6)'); gr.addColorStop(0.5, 'rgba(6,8,13,0.25)'); gr.addColorStop(1, 'rgba(6,8,13,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); }), transparent: true, depthWrite: false, fog: false }));
   dissolve.rotation.x = -Math.PI / 2; dissolve.position.y = 0.004; dissolve.renderOrder = 3; scene.add(dissolve);
 } else {
   const plaza = new THREE.Mesh(new THREE.CircleGeometry(LAKE_R, 96), new THREE.MeshStandardMaterial({ color: col(0x131419), roughness: 0.76, metalness: 0.06, envMapIntensity: 0.5 })); plaza.rotation.x = -Math.PI / 2; plaza.position.y = 0.001; scene.add(plaza);
@@ -147,7 +150,9 @@ function standIn() { const g = new THREE.Group(); let y = 0; for (const [r, h] o
   let root; try { if (NOMODEL) throw new Error('nomodel'); root = await loadGLB('assets/burj.glb', p => { hint.textContent = `Loading the tower · ${Math.round(p * 100)}%`; }); } catch (e) { console.warn('[tower-v2] GLB unavailable, stand-in massing', e); root = standIn(); }
   fitTower(root); root.position.y = 0.08; tower.add(root);
   if (FLAT) root.traverse(o => { if (o.isMesh) o.material = o.userData.kind === 'vitres' ? flatVitres : flatRebord; });
-  if (water) { reflection = root.clone(true); reflection.traverse(o => { if (o.isMesh) o.material = reflMat; }); reflection.scale.y = -1; reflection.position.y = -0.08; scene.add(reflection); }
+  // the reflection is the tower's own lit glass, mirrored (the floods do not reach below the water, so the emissive windows must carry it); tier C skips it
+  if (water && tier !== 'C') { const reflGlass = vitres.clone(); reflGlass.polygonOffset = false; reflGlass.envMapIntensity = 0.8; reflGlass.onBeforeCompile = vitres.onBeforeCompile; reflGlass.customProgramCacheKey = vitres.customProgramCacheKey;
+    reflection = root.clone(true); reflection.traverse(o => { if (o.isMesh) o.material = o.userData.kind === 'vitres' ? reflGlass : reflMat; }); reflection.scale.y = -1; reflection.position.y = -0.08; scene.add(reflection); }
   towerReady = true; hint.textContent = 'Drag to look around · 1 2 3 viewpoints · wheel to dolly'; needsRender = true;
 })();
 
@@ -184,7 +189,7 @@ addEventListener('resize', layout);
 
 /* ── the rig (from hero-v2): critically damped springs, momentum yaw, crane on scroll, wheel dolly, viewpoints ── */
 class Spring { constructor(x, k, z = 1) { this.x = x; this.v = 0; this.t = x; this.k = k; this.c = 2 * Math.sqrt(k) * z; } step(dt) { const a = -this.k * (this.x - this.t) - this.c * this.v; this.v += a * dt; this.x += this.v * dt; return this.x; } }
-const VIEWS = { 1: { dist: 8.5, look: 1.35, pitch: -0.10, lookX: 1.9 }, 2: { dist: 12.4, look: 2.9, pitch: -0.02, lookX: 2.2 }, 3: { dist: 5.2, look: 5.35, pitch: 0.05, lookX: 1.2 } };
+const VIEWS = { 1: { dist: 8.0, look: 1.35, pitch: -0.10, lookX: 1.8 }, 2: { dist: 10.6, look: 2.75, pitch: -0.03, lookX: 2.0 }, 3: { dist: 5.2, look: 5.35, pitch: 0.05, lookX: 1.2 } };
 const HOME = VIEWS[2];
 const rig = { yaw: -0.42, yawVel: 0, pitch: new Spring(HOME.pitch, 26), dist: new Spring(HOME.dist, 12), look: new Spring(HOME.look, 12), lookX: new Spring(HOME.lookX, 10), panX: new Spring(0, 42), panY: new Spring(0, 42), scroll: new Spring(0, 9) };
 let view = HOME, dragging = false, lastX = 0, lastY = 0, lastInput = -1e9, ptrX = 0, ptrY = 0, dollyZ = 0;
@@ -207,7 +212,7 @@ applyTier(tier);
 
 /* ── frame ── */
 /* The canvas is fixed; past the hero there is nothing to draw and nothing that
-   should be seen. */
+   should be seen. Hide it and let the GPU go quiet. */
 let heroOnScreen = true, tabVisible = !document.hidden;
 document.addEventListener('visibilitychange', () => { tabVisible = !document.hidden; });
 if (heroEl && 'IntersectionObserver' in window) {
