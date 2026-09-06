@@ -21,12 +21,12 @@ python -m http.server 5173
 | `css/base.css` | Reset, typography, grid, the four reveal animations |
 | `css/sections.css` | Per-section layout |
 | `css/mark.css` | The UMER mark (traced SVG) and its motion |
-| `js/scene.js` | WebGL hero — Burj Khalifa, lighting rig, cursor light, reflection probe |
+| `js/scene.js` | WebGL hero — Burj Khalifa at blue hour over Burj Lake; aluminium/glass shading, per-window lights, specular anti-aliasing, drag/zoom/viewpoints |
 | `js/main.js` | Reveals, line-splitting, counters, nav, parallax |
 | `js/mark.js` | The logo traced to SVG paths |
 | `DIRECTION.md` | Art direction bible — concept, palette, type, motion, WebGL law |
 | `STRUCTURE.md` | Site architecture, copy, and choreography |
-| `prototype/` | Design prototypes: nav, logo motion system, crystal hero |
+| `prototype/` | Design prototypes: nav (elevation instrument), logo motion system, crystal hero, hero-v2 (background), tower-v2 (realistic tower + shimmer diagnosis) |
 | `_research/` | Research dossier, live inventory, extracted developer PDFs |
 
 ## Design
@@ -56,10 +56,21 @@ change frequently — see [`_research/INVENTORY.md`](_research/INVENTORY.md).
   to be replaced with the client's own photography
 - `assets/burj.glb`: free Burj Khalifa model via Sketchfab
 
+## Interaction
+
+The hero tower is drag-to-rotate with momentum, wheel-to-dolly, double-click
+home, and three viewpoints — Base / Full height / Crown — on the controls or
+keys 1/2/3. Everything runs through a spring rig so it arrives with weight.
+The canvas is hidden and the renderer stopped once the hero leaves the screen.
+
 ## Outstanding
 
-- Optimise `assets/burj.glb` (23.8MB, 661k triangles — needs Draco/decimation)
-- Integrate the elevation-rail nav and full logo motion system from `prototype/`
-- Replace remaining stock photography
+- Optimise `assets/burj.glb` (23.8MB, 661k triangles — needs Draco/decimation
+  via Blender or `gltf-transform`; neither is installed here)
+- Integrate the elevation-rail nav and the full logo motion system from
+  `prototype/nav.html` and `prototype/logo.html`
+- Replace remaining stock photography with the client's own
 - Confirm the seven disputed price figures with the client
+  (see `_research/INVENTORY.md`)
 - Replace `assets/lens/` with versions free of the "rawr." sticker
+- Remaining items on the ordered fix list in [`REVIEW.md`](REVIEW.md) §B.11
