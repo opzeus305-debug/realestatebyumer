@@ -152,8 +152,12 @@ hr, .hairline { border: 0; height: 1px; background: var(--hairline); width: 100%
 }
 .r-rise.is-in { transform: none; opacity: 1; }
 
-.r-mask { clip-path: inset(0 0 100% 0); transition: clip-path 900ms var(--ease-out-expo); transition-delay: var(--delay, 0ms); }
-.r-mask.is-in { clip-path: inset(0); }
+.r-mask {
+  clip-path: inset(0 0 100% 0); opacity: 0;
+  transition: clip-path 900ms var(--ease-out-expo), opacity 700ms var(--ease-out-expo);
+  transition-delay: var(--delay, 0ms);
+}
+.r-mask.is-in { clip-path: inset(0); opacity: 1; }
 .r-mask > img, .r-mask > canvas { transform: scale(1.08); transition: transform 1400ms var(--ease-out-expo); }
 .r-mask.is-in > img, .r-mask.is-in > canvas { transform: scale(1); }
 
@@ -165,7 +169,7 @@ hr, .hairline { border: 0; height: 1px; background: var(--hairline); width: 100%
 
 @media (prefers-reduced-motion: reduce) {
   .r-line > *, .r-rise { transform: none !important; opacity: 1 !important; }
-  .r-mask { clip-path: none !important; }
+  .r-mask { clip-path: none !important; opacity: 1 !important; }
   .r-mask > img, .r-mask > canvas { transform: none !important; }
   .r-draw, .r-draw--up { transform: none !important; }
 }

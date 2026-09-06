@@ -77,7 +77,7 @@
 <section id="ground" data-elev="LVL 01 · GROUND TRUTH">
   <div class="shell">
     <div class="grid">
-      <div class="section-head">
+      <div class="gt__head">
         <p class="eyebrow r-rise" data-reveal>Ground truth</p>
         <h2 data-reveal-lines>Dubai does not need selling. It needs reading.</h2>
         <p class="lead r-rise" data-reveal style="--delay:120ms">
@@ -85,6 +85,19 @@
           figures I start every conversation with, dated and sourced, and I
           update them here when the Land Department publishes.
         </p>
+      </div>
+
+      <div class="gt__plate">
+        <figure class="shot r-mask" data-reveal style="--delay:110ms">
+          <img src="assets/img/downtown-night-1280.webp"
+               alt="Downtown Dubai at night" width="1280" height="960"
+               loading="lazy" decoding="async">
+          <figcaption class="shot__cap">Downtown &middot; the most transacted square mile in the emirate</figcaption>
+        </figure>
+        <div class="gt__note r-rise" data-reveal style="--delay:220ms">
+          <span>Source <b>Dubai Land Department</b></span>
+          <span>As at <b>6 Sep 2026</b></span>
+        </div>
       </div>
 
       <div class="stats">
@@ -660,6 +673,7 @@
   } }
 </script>
 <script type="module" src="js/scene.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
 <script src="js/mark.js"></script>
 <script src="js/main.js"></script>
 </body>

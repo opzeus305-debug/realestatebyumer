@@ -173,7 +173,7 @@
 .stats {
   grid-column: 2 / span 11; display: grid;
   column-gap: var(--grid-gap); row-gap: 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: var(--s-9);
+  grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: var(--s-8);
 }
 @media (max-width: 1023px) { .stats { grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px)  { .stats { grid-template-columns: 1fr; } }
@@ -576,3 +576,19 @@ html, body { max-width: 100%; overflow-x: clip; }
 .invest__bg::after { content: ""; position: absolute; inset: 0;
   background: radial-gradient(120% 90% at 50% 50%, rgba(10,11,18,0.62) 0%, rgba(10,11,18,0.96) 70%); }
 .invest .shell { position: relative; z-index: 2; }
+
+/* ─── GROUND TRUTH — head and evidence side by side, not head then void ── */
+.gt__head { grid-column: 2 / span 5; align-self: center; }
+.gt__plate { grid-column: 8 / span 5; }
+@media (max-width: 1023px) {
+  .gt__head, .gt__plate { grid-column: 1 / -1; }
+  .gt__plate { margin-top: var(--s-7); }
+}
+.gt__plate .shot { aspect-ratio: 4 / 5; }
+.gt__note {
+  margin-top: var(--s-5); font-family: var(--font-data); font-size: var(--t-2xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-subtle);
+  display: flex; justify-content: space-between; gap: var(--s-4);
+  border-top: 1px solid var(--hairline); padding-top: var(--s-4);
+}
+.gt__note b { color: var(--accent-strong); font-weight: 400; }

@@ -122,9 +122,9 @@ function cityRing(count, rMin, rMax, hMin, hMax, density) {
   scene.add(mesh); return mesh;
 }
 const rings = [
-  cityRing(70, 4, 22, 0.35, 1.9, 0.22),       // near Downtown: mid-rise, some towers
-  cityRing(130, 20, 55, 0.25, 2.6, 0.12),     // mid: the Business Bay / DIFC wall
-  cityRing(130, 50, 120, 0.2, 2.0, 0.05),     // far: silhouettes in the haze
+  // Only a distant silhouette band remains: enough to give the tower scale and
+  // a horizon that belongs somewhere, without a city competing with the type.
+  cityRing(90, 62, 150, 0.18, 1.5, 0.04),
 ];
 
 /* window lights — additive points with fog attenuation and a slow breathe (light may breathe; nothing else loops) */
@@ -149,7 +149,7 @@ const cityLights = makeLights(lightPos, lightCol, lightSeed, 46, col(0xFFFFFF, 1
 function gradTex(w, h, paint) { const c = document.createElement('canvas'); c.width = w; c.height = h; paint(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }
 const hazeTex = gradTex(16, 256, (g, w, h) => { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(120,110,140,0)'); gr.addColorStop(0.55, 'rgba(120,110,140,0.35)'); gr.addColorStop(1, 'rgba(120,110,140,0.55)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
 function hazePlane(z, h, alpha) { const m = new THREE.Mesh(new THREE.PlaneGeometry(400, h), new THREE.MeshBasicMaterial({ map: hazeTex, transparent: true, depthWrite: false, opacity: alpha, fog: false, color: col(0xFFFFFF) })); m.position.set(0, h / 2 - 0.05, z); scene.add(m); return m; }
-const hazeNear = hazePlane(-26, 4.2, 0.55), hazeFar = hazePlane(-70, 9, 0.8);
+const hazeNear = hazePlane(-40, 3.0, 0.22), hazeFar = hazePlane(-95, 8, 0.42);
 const glowTex = gradTex(256, 256, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, 'rgba(226,176,120,0.85)'); gr.addColorStop(0.4, 'rgba(226,176,120,0.28)'); gr.addColorStop(1, 'rgba(226,176,120,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
 const cityGlow = new THREE.Mesh(new THREE.PlaneGeometry(160, 60), new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.5, fog: false }));
 cityGlow.rotation.x = -Math.PI / 2; cityGlow.position.set(0, 0.02, -34); scene.add(cityGlow);
