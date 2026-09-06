@@ -1,0 +1,17 @@
+# ── research working files (large; not part of the site) ───────────────
+_research/dropbox/
+_research/tmp/
+_research/shots/
+_research/assets/
+_research/raw/
+
+# duplicate of assets/burj.glb
+prototype/*.glb
+prototype/*.zip
+
+# scratch
+review.html
+debug.html
+*.bak
+.DS_Store
+Thumbs.db

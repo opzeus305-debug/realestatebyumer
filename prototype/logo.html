@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en-AE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Mark in Motion</title>
+<meta name="description" content="Real Estate by Umer — the logo motion system, playable. Build, curtain, progress, idle, and the handoff from wordmark to Spire Prism.">
+<!--
+  REAL ESTATE BY UMER — PROTOTYPE · LOGO MOTION SYSTEM · "THE MARK IN MOTION"
+  GSAP 3.13.0 (cdnjs) for the SVG plates · three.js 0.180.0 (cdnjs, ESM) for the handoff plate.
+  The mark is traced from assets/brand/umer-logo.png (pure-Python alpha trace, 0.75px tolerance); the path
+  data is inline below. The spire is a separate path so it can be a gauge; the letters are clipped at y=614.
+
+  THE SYSTEM IN ONE PARAGRAPH
+  The mark only ever does one thing: it ASCENDS. Every state is a variation on rising — the spire draws
+  upward, the shafts rise into place, the curtain climbs as the tower's own silhouette, progress fills the
+  spire from its base, the handoff lets the tower grow up through the letters. Light (the specular sweep,
+  the tip glint) is rare and earned: once per session, never on a loop. Nothing bounces; nothing spins.
+
+  PLATES
+  01 THE BUILD      spire draws (500ms out-expo) → shafts rise M→E→U→R (700ms out-quint, stagger 90ms)
+                    → one specular sweep (500ms in-out-soft). Total 1400ms. Hard cap. This is the preloader.
+  02 THE CURTAIN    page transition. A night-0 curtain rises from the bottom whose top edge IS the tower's
+                    setback silhouette — five columns rise at different lags, the spire strip leads.
+                    900ms in-out-cinematic up · 300ms hold with the destination's elevation marker ·
+                    600ms exit upward. Back/forward navigation skips it (200ms crossfade).
+  03 PROGRESS       the spire as the load bar. Letters lit, spire as a dim track, fill bottom→top.
+                    The same value drives the 240px mark, the 40px nav mark and the 1px margin line:
+                    one instrument at three scales. At 100% the tip glints once.
+  04 IDLE           the nav mark at 24/32/40px. It does nothing. Hairlines warm on hover (180ms silk).
+                    The specular sweep is triggered by events (first reaching LVL 07, a form success),
+                    once per session. Under reduced motion it never fires.
+  05 THE HANDOFF    2D mark → 3D Spire Prism, four seconds. The flat gradient mark gains glass depth;
+                    the four crystal shafts rise from the floor through the letters' own footprints
+                    (each letter becomes the shaft that stands where it stood — heights match); the
+                    letters dissolve upward into champagne dust that gathers into the shafts. The tower
+                    holds, rotating at 0.05 rad/s. This is the preloader→hero handoff.
+
+  URL params:  ?rm=1  preview the reduced-motion variants · ?p5=3.6  freeze plate 05 at a time (seconds)
+               ?auto=0  do not autoplay the plates
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=Jost:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/CustomEase.min.js"></script>
+<style>
+  :root{
+    --night-0:#05060A; --night-1:#0A0B12; --night-2:#10121B; --night-3:#171A26;
+    --champagne-50:#FBF7F0; --champagne-100:#F4EADD; --champagne-200:#EAD2AE; --champagne-300:#DEC6A2; --champagne-400:#D9B484;
+    --cream-100:#F1ECE3; --cream-200:#CFC9BE; --cream-300:#8F8A80; --cream-400:#5C584F;
+    --hairline:rgba(241,236,227,.10); --hairline-strong:rgba(241,236,227,.18); --hairline-gold:rgba(222,198,162,.35); --glow:rgba(234,210,174,.22);
+    --font-display:"Fraunces","Iowan Old Style","Palatino Linotype",Georgia,serif;
+    --font-text:"Jost","Futura","Century Gothic","Avenir Next",Arial,sans-serif;
+    --font-data:"DM Mono","SF Mono",Menlo,Consolas,monospace;
+    --t-2xs:.6875rem; --t-xs:clamp(.75rem,.72rem + .15vw,.8125rem); --t-sm:clamp(.875rem,.85rem + .15vw,.9375rem); --t-base:clamp(1rem,.95rem + .3vw,1.125rem);
+    --t-md:clamp(1.125rem,1.05rem + .4vw,1.375rem); --t-lg:clamp(1.375rem,1.2rem + .9vw,1.875rem); --t-xl:clamp(1.75rem,1.4rem + 1.6vw,2.75rem); --t-2xl:clamp(2.25rem,1.6rem + 3vw,4rem);
+    --ease-out-expo:cubic-bezier(.16,1,.3,1); --ease-out-quint:cubic-bezier(.22,1,.36,1); --ease-in-out-soft:cubic-bezier(.65,0,.35,1); --ease-silk:cubic-bezier(.4,0,.1,1);
+    --margin:clamp(20px,5vw,96px);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--night-1);color:var(--cream-100);font-family:var(--font-text);font-size:var(--t-base);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  :focus-visible{outline:2px solid var(--champagne-200);outline-offset:3px;border-radius:2px}
+  .label{font-family:var(--font-text);font-weight:500;font-size:var(--t-xs);letter-spacing:.16em;text-transform:uppercase}
+  .data{font-family:var(--font-data);font-weight:400;font-size:var(--t-2xs);letter-spacing:.04em;text-transform:uppercase;font-variant-numeric:tabular-nums}
+  .display{font-family:var(--font-display);font-weight:300;font-variation-settings:"opsz" 144,"SOFT" 0,"WONK" 0;letter-spacing:-.02em;line-height:1.02;text-wrap:balance}
+  .display em{font-style:italic;color:var(--champagne-200);font-variation-settings:"opsz" 144,"SOFT" 20,"WONK" 1}
+
+  header{padding:clamp(48px,7vw,96px) var(--margin) clamp(32px,4vw,56px);display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:clamp(16px,2vw,32px);align-items:end}
+  header .kicker{grid-column:1/-1;display:flex;align-items:center;gap:16px;color:var(--champagne-300);margin-bottom:24px}
+  header .kicker::before{content:"";width:24px;height:1px;background:var(--hairline-gold)}
+  header h1{grid-column:1/span 8;margin:0;font-size:var(--t-2xl)}
+  header .intro{grid-column:9/span 4;color:var(--cream-200);font-weight:300;font-size:var(--t-md);line-height:1.5;margin:0}
+  .controls{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:24px 40px;align-items:center;margin-top:40px;padding-top:24px;border-top:1px solid var(--hairline);color:var(--cream-300)}
+  .controls nav{display:flex;gap:28px}
+  .controls a{text-decoration:none;color:var(--cream-300)}
+  .controls a:hover{color:var(--cream-100)}
+  .toggle{display:inline-flex;align-items:center;gap:10px;cursor:pointer;margin-left:auto}
+  .toggle input{appearance:none;width:34px;height:18px;border:1px solid var(--hairline-strong);border-radius:9px;position:relative;margin:0;background:transparent;cursor:pointer}
+  .toggle input::after{content:"";position:absolute;top:3px;left:3px;width:10px;height:10px;border-radius:50%;background:var(--cream-300);transition:transform 180ms var(--ease-silk),background 180ms var(--ease-silk)}
+  .toggle input:checked::after{transform:translateX(16px);background:var(--champagne-200)}
+  @media (max-width:1023px){header h1,header .intro{grid-column:1/-1}}
+
+  .plate{padding:clamp(48px,6vw,96px) var(--margin);display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:clamp(16px,2vw,32px);row-gap:32px;border-top:1px solid var(--hairline)}
+  .stage{grid-column:1/span 8;position:relative;aspect-ratio:16/9;background:var(--night-0);border:1px solid var(--hairline);overflow:hidden;border-radius:2px;container-type:size}
+  .stage.tall{aspect-ratio:16/10}
+  .notes{grid-column:9/span 4;display:flex;flex-direction:column;gap:20px}
+  .notes .num{color:var(--champagne-300)}
+  .notes h2{margin:0;font-size:var(--t-xl)}
+  .notes p{margin:0;color:var(--cream-200);font-weight:300}
+  .spec{margin:8px 0 0;padding:0;list-style:none;border-top:1px solid var(--hairline)}
+  .spec li{display:grid;grid-template-columns:9ch 1fr;gap:16px;padding:9px 0;border-bottom:1px solid var(--hairline);color:var(--cream-200)}
+  .spec li span:first-child{color:var(--cream-300)}
+  .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+  .btn{display:inline-flex;align-items:center;gap:10px;height:44px;padding:0 22px;border-radius:2px;border:1px solid var(--hairline-strong);background:transparent;color:var(--cream-100);cursor:pointer;transition:border-color 180ms var(--ease-silk),color 180ms var(--ease-silk),background-color 180ms var(--ease-silk),transform 80ms}
+  .btn:hover{border-color:var(--champagne-300);color:var(--champagne-200)}
+  .btn:active{transform:scale(.98)}
+  .btn.primary{background:var(--champagne-300);border-color:transparent;color:var(--night-1)}
+  .btn.primary:hover{background:var(--champagne-100);color:var(--night-1);box-shadow:0 0 32px var(--glow)}
+  @media (max-width:1023px){.stage,.notes{grid-column:1/-1}}
+
+  /* the mark */
+  .mark-svg{display:block;overflow:visible}
+  .m-letters{fill:currentColor;stroke:currentColor;stroke-width:1.1px;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+  .m-letters.gold{fill:url(#gold);stroke:none}
+  .m-spire{fill:currentColor;stroke:currentColor;stroke-width:1.1px;vector-effect:non-scaling-stroke}
+  .m-spire.gold{fill:url(#gold);stroke:none}
+  .m-spire-track{fill:var(--cream-400);stroke:var(--cream-400);stroke-width:1px;vector-effect:non-scaling-stroke}
+  .m-spire-fill{fill:var(--champagne-200);stroke:var(--champagne-200);stroke-width:1.1px;vector-effect:non-scaling-stroke;clip-path:inset(calc((1 - var(--p,0)) * 100%) 0 0 0)}
+  .m-glint{fill:var(--champagne-50);opacity:0}
+  .m-sweep{fill:url(#sweep);opacity:0}
+
+  /* 01 build */
+  #stage1 .center{position:absolute;inset:0;display:grid;place-items:center}
+  #stage1 .mark-svg{height:64cqh;width:auto;color:var(--champagne-300)}
+  .stage .elev{position:absolute;left:24px;top:22px;color:var(--cream-300)}
+  .stage .foot{position:absolute;left:24px;right:24px;bottom:18px;display:flex;justify-content:space-between;color:var(--cream-400)}
+
+  /* 02 curtain */
+  .page{position:absolute;inset:0;display:grid;align-content:center;padding:0 10%;gap:18px}
+  .page .eyebrow{display:flex;align-items:center;gap:14px;color:var(--champagne-300)}
+  .page .eyebrow::before{content:"";width:24px;height:1px;background:var(--hairline-gold)}
+  .page h3{margin:0;font-size:clamp(1.6rem,1rem + 2.4vw,3.2rem)}
+  .page p{margin:0;color:var(--cream-200);font-weight:300;max-width:44ch}
+  .page[hidden]{display:none}
+  .page.a{background:radial-gradient(ellipse at 72% 38%,rgba(43,47,74,.95) 0%,var(--night-1) 62%)}
+  .page.b{background:var(--night-2)}
+  #curtain{position:absolute;inset:0;width:100%;height:100%}
+  #curtainMarker{position:absolute;inset:0;display:grid;place-items:center;color:var(--cream-200);opacity:0;pointer-events:none}
+
+  /* 03 progress */
+  #stage3 .grid{position:absolute;inset:0;display:grid;grid-template-columns:1fr auto auto;align-items:end;gap:6%;padding:8% 9%}
+  #stage3 .big{display:flex;align-items:flex-end}
+  #stage3 .big .mark-svg{height:80cqh;width:auto;color:var(--champagne-300)}
+  #stage3 .small{display:flex;align-items:flex-end;gap:16px;padding-bottom:6px;color:var(--champagne-300)}
+  #stage3 .small .mark-svg{height:40px;width:auto}
+  #stage3 .line{position:relative;width:1px;height:76cqh;background:var(--hairline);margin-bottom:6px}
+  #stage3 .line i{position:absolute;left:0;right:0;bottom:0;height:calc(var(--p,0) * 100%);background:var(--champagne-300)}
+  #stage3 .line b{position:absolute;left:-2px;width:5px;height:1px;background:var(--cream-400)}
+  #stage3 .readout{position:absolute;right:24px;top:22px;color:var(--cream-300);text-align:right;line-height:1.7}
+  #stage3 .readout strong{display:block;font-family:var(--font-display);font-weight:300;font-size:var(--t-2xl);font-variation-settings:"opsz" 144;font-variant-numeric:tabular-nums lining-nums;letter-spacing:-.02em;color:var(--champagne-200);line-height:1}
+  .range{appearance:none;width:100%;height:1px;background:var(--hairline-strong);outline:none;margin:14px 0 4px}
+  .range::-webkit-slider-thumb{appearance:none;width:14px;height:14px;border-radius:50%;background:var(--champagne-300);box-shadow:0 0 12px var(--glow);cursor:pointer}
+  .range::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:var(--champagne-300);cursor:pointer}
+
+  /* 04 idle */
+  #stage4 .bars{position:absolute;inset:0;display:grid;align-content:center;gap:0;padding:0 8%}
+  .navbar{display:flex;align-items:center;gap:18px;height:64px;border-bottom:1px solid var(--hairline);color:var(--champagne-300);transition:border-color 180ms var(--ease-silk)}
+  .navbar:hover{border-color:var(--hairline-gold)}
+  .navbar .mark-svg{flex:none}
+  .navbar .brand{color:var(--cream-200);white-space:nowrap}
+  .navbar .pill,.navbar .links span{white-space:nowrap}
+  .navbar .size{margin-left:auto;color:var(--cream-400)}
+  .navbar .links{display:flex;gap:26px;margin-left:auto;color:var(--cream-200)}
+  .navbar .links span{position:relative}
+  .navbar .links span::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:1px;background:var(--champagne-300);transform:scaleX(0);transform-origin:left;transition:transform 180ms var(--ease-out-expo)}
+  .navbar .links span:hover::after{transform:scaleX(1)}
+  .navbar .pill{display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:2px;background:var(--champagne-300);color:var(--night-1)}
+  .navbar.static{opacity:.6}
+
+  /* 05 handoff */
+  #stage5 canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  #stage5 .caption{position:absolute;left:24px;bottom:18px;color:var(--cream-300)}
+
+  footer{padding:48px var(--margin) 64px;border-top:1px solid var(--hairline);color:var(--cream-300);display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px}
+
+  /* reduced motion — real or previewed */
+  @media (prefers-reduced-motion:reduce){:root{--rm:1}}
+  html.rm .m-sweep,html.rm .m-glint{opacity:0 !important}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- the logo's champagne, sampled: deep gold at the base, a white specular sweeping diagonally through the M and E -->
+    <linearGradient id="gold" gradientUnits="userSpaceOnUse" x1="558" y1="1280" x2="1042" y2="129">
+      <stop offset="0" stop-color="#D9B484"/><stop offset=".36" stop-color="#EAD2AE"/><stop offset=".55" stop-color="#F4EADD"/><stop offset=".6" stop-color="#FFFFFF"/><stop offset=".66" stop-color="#F4EADD"/><stop offset=".82" stop-color="#E6CDAE"/><stop offset="1" stop-color="#DEC6A2"/>
+    </linearGradient>
+    <linearGradient id="sweep" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#FBF7F0" stop-opacity="0"/><stop offset=".5" stop-color="#FBF7F0" stop-opacity=".95"/><stop offset="1" stop-color="#FBF7F0" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<header>
+  <p class="kicker label">Real Estate by Umer · logo motion system · v1</p>
+  <h1 class="display">The mark only ever does one thing. <em>It ascends.</em></h1>
+  <p class="intro">Five states, one verb. The spire draws upward, the shafts rise, the curtain climbs as the tower’s own silhouette, progress fills from the base, and the letters become the crystal. Light is rare and earned.</p>
+  <div class="controls data">
+    <nav aria-label="Plates"><a href="#p1">01 Build</a><a href="#p2">02 Curtain</a><a href="#p3">03 Progress</a><a href="#p4">04 Idle</a><a href="#p5">05 Handoff</a></nav>
+    <label class="toggle"><input type="checkbox" id="rmToggle"> Preview reduced motion</label>
+  </div>
+</header>
+
+<main>
+  <!-- ═══════════════════════ 01 THE BUILD ═══════════════════════ -->
+  <section class="plate" id="p1" aria-labelledby="h1p">
+    <div class="stage" id="stage1">
+      <div class="elev data">LVL 00 · Ground · preloader</div>
+      <div class="center" id="buildMount"></div>
+      <div class="foot data"><span>t = <span id="buildT">0.00</span>s</span><span>Hard cap 1.40s</span></div>
+    </div>
+    <div class="notes">
+      <span class="num data">01 · Signature build</span>
+      <h2 class="display" id="h1p">The spire first. Then the shafts. Then one flash of light.</h2>
+      <p>The mark assembles the way the tower was built: the needle goes up first and the massing rises to meet it. Every shaft rises from the same baseline under a line-mask, the tallest leading, so the sequence reads as one structure growing rather than four letters appearing. The specular sweep crosses once, then never again in the session.</p>
+      <ul class="spec data">
+        <li><span>Spire</span><span>0 → 500ms · draw upward · ease-out-expo</span></li>
+        <li><span>Shafts</span><span>380ms start · M → E → U → R · 700ms each · ease-out-quint · stagger 90ms</span></li>
+        <li><span>Sweep</span><span>950 → 1450ms · left → right · ease-in-out-soft · once</span></li>
+        <li><span>Cap</span><span>1400ms, then hand off to the hero regardless of load state</span></li>
+        <li><span>Reduced</span><span>mark appears in 200ms, no sequence, no sweep</span></li>
+      </ul>
+      <div class="actions"><button class="btn label" id="replay1">Replay</button></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ 02 THE CURTAIN ═══════════════════════ -->
+  <section class="plate" id="p2" aria-labelledby="h2p">
+    <div class="stage" id="stage2">
+      <div class="page a" id="pageA"><span class="eyebrow label">Home · LVL 00</span><h3 class="display">The numbers first. <em>Then the view.</em></h3><p>Emaar’s current releases, read the way a banker reads a balance sheet.</p></div>
+      <div class="page b" id="pageB" hidden><span class="eyebrow label">Projects · Montiva by Vida</span><h3 class="display">One tower, read <em>floor by floor.</em></h3><p>One-bedrooms from 765 sq ft. Handover September 2029. Every face sees something the market prices.</p></div>
+      <svg id="curtain" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true"><path id="curtainPath" fill="#05060A" d=""/><path id="curtainEdge" fill="none" stroke="rgba(222,198,162,.5)" stroke-width="1.5" vector-effect="non-scaling-stroke" d=""/></svg>
+      <div id="curtainMarker" class="data">PROJECTS · MONTIVA</div>
+    </div>
+    <div class="notes">
+      <span class="num data">02 · Page transition</span>
+      <h2 class="display" id="h2p">A curtain that climbs as the tower’s own silhouette.</h2>
+      <p>Between routes a night curtain rises from the bottom of the viewport. Its top edge is not flat: it is the mark’s setback profile — five columns climbing at different lags, the spire strip racing ahead — so for half a second the whole screen is the logo. At full cover the destination’s elevation marker appears; then the curtain continues upward and off. Back and forward navigation skip it.</p>
+      <ul class="spec data">
+        <li><span>Rise</span><span>900ms · ease-in-out-cinematic · columns lag 0–160ms · spire leads by 80ms</span></li>
+        <li><span>Hold</span><span>300ms · destination marker fades in 200ms</span></li>
+        <li><span>Exit</span><span>600ms · same profile leaves through the top</span></li>
+        <li><span>Total</span><span>1500ms · history navigation: 200ms crossfade instead</span></li>
+        <li><span>Reduced</span><span>200ms crossfade, marker still shown</span></li>
+      </ul>
+      <div class="actions"><button class="btn label" id="replay2">Transition</button></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ 03 PROGRESS ═══════════════════════ -->
+  <section class="plate" id="p3" aria-labelledby="h3p">
+    <div class="stage tall" id="stage3">
+      <div class="elev data">Loading · one value, three instruments</div>
+      <div class="readout data"><strong id="pct">0%</strong><span id="pstate">Loading</span></div>
+      <div class="grid">
+        <div class="big" id="bigMount"></div>
+        <div class="small" id="smallMount"><span class="label" style="color:var(--cream-200)">Real Estate by Umer</span></div>
+        <div class="line" aria-hidden="true"><i></i><b style="bottom:0"></b><b style="bottom:11%"></b><b style="bottom:22%"></b><b style="bottom:33%"></b><b style="bottom:44%"></b><b style="bottom:56%"></b><b style="bottom:67%"></b><b style="bottom:78%"></b><b style="bottom:89%"></b><b style="bottom:100%"></b></div>
+      </div>
+    </div>
+    <div class="notes">
+      <span class="num data">03 · Loading and progress</span>
+      <h2 class="display" id="h3p">The spire is the progress bar.</h2>
+      <p>The letters are always lit; the spire is a dim track that fills from its base. The same number drives the large mark, the 40px nav mark and the 1px margin line with its ten level notches — so the preloader, the nav and the page all read the same instrument. No percentage counter in production; the figure here is for reviewers. At 100% the tip glints once.</p>
+      <ul class="spec data">
+        <li><span>Fill</span><span>clip-path inset from the top · linear to the value · no easing on real loads</span></li>
+        <li><span>Simulated</span><span>0 → 72% in 900ms out-expo · hold 350ms · 72 → 100% in 500ms out-quint</span></li>
+        <li><span>Complete</span><span>tip glint 1200ms in-out-soft · letters brighten 100 → 50</span></li>
+        <li><span>Scales</span><span>240px · 40px · 1px line — identical value</span></li>
+      </ul>
+      <label class="data" for="scrub" style="color:var(--cream-300)">Scrub the value</label>
+      <input class="range" id="scrub" type="range" min="0" max="100" value="0" aria-label="Progress value">
+      <div class="actions"><button class="btn label" id="simulate">Simulate a load</button></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ 04 IDLE ═══════════════════════ -->
+  <section class="plate" id="p4" aria-labelledby="h4p">
+    <div class="stage" id="stage4">
+      <div class="elev data">Ambient · the mark at nav size</div>
+      <div class="bars">
+        <div class="navbar"><span class="mark-slot" data-h="24"></span><span class="brand label">Real Estate by Umer</span><span class="size data">24px</span></div>
+        <div class="navbar"><span class="mark-slot" data-h="32"></span><span class="brand label">Real Estate by Umer</span><span class="size data">32px</span></div>
+        <div class="navbar" id="navDemo"><span class="mark-slot" data-h="40" id="idleMark"></span><span class="brand label">Real Estate by Umer</span><span class="links label"><span>Projects</span><span>Method</span><span>Market</span><span>About</span></span><span class="pill label">Send “Invest”</span></div>
+        <div class="navbar static"><span class="mark-slot" data-h="40" data-static="1"></span><span class="brand label">Real Estate by Umer</span><span class="size data">reduced motion · static, no sweep</span></div>
+      </div>
+    </div>
+    <div class="notes">
+      <span class="num data">04 · Idle and the earned sweep</span>
+      <h2 class="display" id="h4p">At 24px it does nothing. That is the design.</h2>
+      <p>The nav mark is a silhouette: the hairline letterforms are thickened uniformly with a non-scaling stroke so the massing and spire hold at 24–40px, flat champagne, no gradient below 120px. It never rotates, pulses or breathes. Hairlines around it warm on hover. The specular sweep is an event, not an idle: it fires once when the visitor first reaches the Spire levels, once on a successful form, and never on a loop.</p>
+      <ul class="spec data">
+        <li><span>Idle</span><span>zero motion · flat champagne-300 · stroke 1.1px non-scaling</span></li>
+        <li><span>Hover</span><span>adjacent hairline → hairline-gold · 180ms ease-silk</span></li>
+        <li><span>Sweep</span><span>900ms · ease-in-out-soft · skewed band · ≤ 1 per session</span></li>
+        <li><span>Reduced</span><span>never fires</span></li>
+      </ul>
+      <div class="actions"><button class="btn label" id="sweepBtn">Trigger the earned sweep</button></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ 05 THE HANDOFF ═══════════════════════ -->
+  <section class="plate" id="p5" aria-labelledby="h5p">
+    <div class="stage tall" id="stage5">
+      <canvas id="gl" role="img" aria-label="The flat champagne wordmark gains glass depth; four crystal shafts rise through the letters and the letters dissolve upward into light, leaving the Spire Prism."></canvas>
+      <div class="elev data">LVL 00 · Ground · preloader → hero</div>
+      <div class="caption data" id="cap5">t = 0.0s · the mark</div>
+    </div>
+    <div class="notes">
+      <span class="num data">05 · The handoff</span>
+      <h2 class="display" id="h5p">The letters become the tower.</h2>
+      <p>The four most valuable seconds on the site. The wordmark, still flat and gold, gains the depth of glass as the camera begins to move. Then the crystal rises from the floor inside the letters’ own footprints — each shaft exactly as tall and as wide as the letter it replaces, the M carrying the spire — while the letterforms dissolve upward into champagne dust that gathers into the glass. What remains is the Spire Prism, the hero object, already turning. The logo did not cut to the crystal. It grew into it.</p>
+      <ul class="spec data">
+        <li><span>0 → 1.2s</span><span>depth 2% → 100% · gradient → glass · camera orbit begins · ease-in-out-soft</span></li>
+        <li><span>1.0 → 2.8s</span><span>shafts rise from y=0 · M → E → U → R · 1400ms out-expo · stagger 90ms</span></li>
+        <li><span>1.2 → 3.0s</span><span>letters dissolve · 2,600 points rise and gather to the shaft axes</span></li>
+        <li><span>2.8s →</span><span>prism holds · 0.05 rad/s · one light sweep across the facets</span></li>
+        <li><span>Reduced</span><span>static prism, no orbit; replay = 200ms crossfade</span></li>
+      </ul>
+      <div class="actions"><button class="btn primary label" id="replay5">Replay the handoff</button><button class="btn label" id="scrub5">Freeze at 1.8s</button></div>
+    </div>
+  </section>
+</main>
+
+<footer class="data"><span>Real Estate by Umer · logo motion system · prototype</span><span>Easings and durations per DIRECTION.md §5 · gold is light, not paint</span></footer>
+
+<!-- ═══════════════════════ SVG plates (GSAP) ═══════════════════════ -->
+<script>
+/* ── the mark (traced) ─────────────────────────────────────────────────── */
+const PATHS = {
+  U: "M652 977 L654 977 L654 1227 L653 1227 L653 1237 L652 1237 L652 1242 L651 1242 L649 1251 L648 1251 L645 1259 L643 1260 L643 1262 L633 1272 L631 1272 L630 1274 L628 1274 L628 1275 L626 1275 L624 1277 L617 1278 L617 1279 L612 1279 L612 1280 L595 1279 L595 1278 L591 1278 L589 1276 L584 1275 L583 1273 L578 1271 L569 1262 L569 1260 L567 1259 L567 1257 L566 1257 L566 1255 L565 1255 L565 1253 L563 1251 L563 1248 L562 1248 L562 1245 L561 1245 L561 1242 L560 1242 L560 1237 L559 1237 L559 1229 L558 1229 L558 1072 L589 1042 L589 1229 L590 1229 L590 1233 L591 1233 L592 1238 L598 1244 L600 1244 L600 1245 L612 1245 L612 1244 L616 1243 L619 1240 L619 1238 L621 1237 L622 1231 L623 1231 L623 1006Z",
+  M: "M789 614 L791 601 L793 603 L796 603 L799 606 L801 606 L813 618 L814 622 L816 623 L816 625 L817 625 L817 627 L819 629 L820 635 L822 637 L824 651 L825 651 L825 659 L826 659 L826 1280 L795 1280 L795 659 L794 659 L794 656 L793 656 L793 653 L792 653 L792 650 L790 649 L790 647 L788 645 L786 645 L785 643 L782 643 L782 642 L774 642 L774 643 L770 644 L766 648 L766 650 L765 650 L765 652 L763 654 L762 663 L761 663 L761 1280 L730 1280 L730 805 L729 805 L729 800 L728 800 L728 797 L727 797 L727 794 L725 793 L725 791 L722 788 L720 788 L718 786 L714 786 L714 785 L708 786 L708 787 L706 787 L705 789 L702 790 L702 792 L700 793 L699 798 L697 800 L697 806 L696 806 L696 1280 L665 1280 L665 803 L666 803 L667 789 L668 789 L668 785 L669 785 L669 781 L670 781 L670 778 L672 776 L672 773 L673 773 L676 765 L678 764 L678 762 L681 760 L681 758 L687 752 L689 752 L690 750 L692 750 L693 748 L695 748 L695 747 L697 747 L699 745 L708 744 L708 743 L718 743 L718 744 L723 744 L723 745 L730 746 L730 661 L731 661 L731 652 L732 652 L733 642 L734 642 L734 638 L735 638 L735 635 L737 633 L737 630 L738 630 L742 620 L744 619 L744 617 L754 607 L756 607 L757 605 L763 603 L764 614Z",
+  E: "M880 782 L896 782 L896 783 L899 783 L899 784 L903 784 L903 785 L907 786 L908 788 L910 788 L911 790 L913 790 L921 798 L921 800 L925 804 L925 806 L926 806 L926 808 L928 810 L928 813 L930 815 L930 818 L931 818 L931 821 L932 821 L932 825 L933 825 L933 830 L934 830 L935 843 L936 843 L936 929 L905 929 L905 844 L904 844 L904 839 L903 839 L903 836 L902 836 L900 830 L896 826 L891 825 L891 824 L882 825 L882 826 L880 826 L875 831 L874 836 L872 838 L872 843 L871 843 L871 1033 L936 1033 L936 1063 L872 1063 L871 1064 L871 1229 L872 1229 L872 1233 L873 1233 L875 1239 L878 1242 L882 1243 L882 1244 L889 1245 L889 1244 L894 1244 L897 1241 L899 1241 L900 1238 L903 1235 L904 1228 L905 1228 L905 1172 L936 1172 L936 1230 L935 1230 L934 1240 L933 1240 L933 1244 L932 1244 L931 1250 L930 1250 L927 1258 L925 1259 L925 1261 L915 1271 L913 1271 L912 1273 L910 1273 L910 1274 L908 1274 L906 1276 L903 1276 L903 1277 L900 1277 L900 1278 L895 1278 L895 1279 L881 1279 L881 1278 L872 1277 L872 1276 L862 1272 L860 1269 L858 1269 L853 1264 L853 1262 L850 1260 L850 1258 L848 1257 L848 1255 L847 1255 L847 1253 L845 1251 L845 1248 L844 1248 L843 1243 L842 1243 L841 1231 L840 1231 L840 1080 L839 1080 L839 1037 L840 1037 L840 841 L841 841 L841 832 L842 832 L842 827 L843 827 L844 819 L845 819 L847 811 L848 811 L850 805 L852 804 L852 802 L854 801 L854 799 L864 789 L866 789 L867 787 L869 787 L869 786 L871 786 L873 784 L876 784 L876 783 L880 783Z",
+  R: "M991 961 L1005 962 L1005 963 L1014 965 L1017 968 L1021 969 L1032 980 L1033 984 L1035 985 L1035 987 L1037 989 L1037 992 L1039 994 L1039 998 L1040 998 L1040 1002 L1041 1002 L1041 1008 L1042 1008 L1042 1088 L1041 1088 L1040 1098 L1039 1098 L1039 1101 L1037 1103 L1037 1106 L1036 1106 L1035 1110 L1033 1111 L1033 1113 L1031 1114 L1031 1116 L1029 1117 L1029 1119 L1032 1121 L1032 1123 L1034 1124 L1034 1126 L1035 1126 L1035 1128 L1037 1130 L1037 1133 L1038 1133 L1039 1139 L1040 1139 L1040 1143 L1041 1143 L1041 1149 L1042 1149 L1042 1280 L1011 1280 L1011 1151 L1010 1151 L1010 1148 L1009 1148 L1009 1145 L1007 1144 L1007 1142 L1004 1139 L1000 1138 L1000 1137 L988 1137 L988 1138 L986 1138 L980 1144 L979 1149 L978 1149 L978 1153 L977 1153 L977 1280 L947 1280 L947 1007 L948 1007 L948 1001 L949 1001 L949 997 L950 997 L951 991 L952 991 L955 983 L959 979 L959 977 L965 971 L967 971 L969 968 L971 968 L971 967 L973 967 L973 966 L975 966 L977 964 L980 964 L980 963 L991 962Z M992 996 L989 996 L989 997 L985 998 L980 1003 L979 1008 L978 1008 L978 1012 L977 1012 L977 1101 L1011 1101 L1011 1010 L1010 1010 L1010 1007 L1009 1007 L1009 1005 L1008 1005 L1008 1003 L1006 1002 L1005 999 L1003 999 L1002 997 L999 997 L999 996Z",
+  SPIRE: "M772 129 L782 129 L782 366 L789 366 L789 614 L764 614 L764 366 L772 366Z",
+};
+const TOP = { U: 977, M: 614, E: 782, R: 961 };           // glyph tops (letters only; the spire is separate)
+const VB = "550 121 500 1167";
+window.PATHS = PATHS;                                         // shared with the module script below
+function markSVG(id, opts = {}) {
+  const gold = opts.gold ? ' gold' : '';
+  const gauge = opts.gauge;
+  const clips = opts.clips ? ['U', 'M', 'E', 'R'].map(g => `<clipPath id="${id}-c${g}"><rect x="550" y="${TOP[g]}" width="500" height="${1288 - TOP[g]}"/></clipPath>`).join('') + `<clipPath id="${id}-cS"><rect x="550" y="121" width="500" height="493"/></clipPath>` : '';
+  const cp = g => opts.clips ? ` clip-path="url(#${id}-c${g})"` : '';
+  return `<svg class="mark-svg" viewBox="${VB}" aria-hidden="true" focusable="false">
+    <defs>${clips}<clipPath id="${id}-glyphs"><path d="${PATHS.U}"/><path d="${PATHS.M}"/><path d="${PATHS.E}"/><path d="${PATHS.R}"/><path d="${PATHS.SPIRE}"/></clipPath></defs>
+    <g class="m-letters${gold}" fill-rule="evenodd"><path d="${PATHS.U}"${cp('U')}/><path d="${PATHS.M}"${cp('M')}/><path d="${PATHS.E}"${cp('E')}/><path d="${PATHS.R}"${cp('R')}/></g>
+    ${gauge ? `<path class="m-spire-track" d="${PATHS.SPIRE}"/><path class="m-spire-fill" d="${PATHS.SPIRE}"/>` : `<path class="m-spire${gold}" d="${PATHS.SPIRE}"${cp('S')}/>`}
+    <rect class="m-glint" x="758" y="121" width="38" height="60" rx="19"/>
+    <g clip-path="url(#${id}-glyphs)"><rect class="m-sweep" x="200" y="100" width="260" height="1200" transform="skewX(-18)"/></g>
+  </svg>`;
+}
+
+/* ── eases: the DIRECTION curves, exact where CustomEase loaded, nearest GSAP core ease otherwise ── */
+const hasCE = typeof CustomEase !== 'undefined';
+if (hasCE) gsap.registerPlugin(CustomEase);
+const E = {
+  outExpo:  hasCE ? CustomEase.create('outExpo', '0.16,1,0.3,1') : 'expo.out',
+  outQuint: hasCE ? CustomEase.create('outQuint', '0.22,1,0.36,1') : 'power4.out',
+  inOutSoft: hasCE ? CustomEase.create('inOutSoft', '0.65,0,0.35,1') : 'power2.inOut',
+  cinematic: hasCE ? CustomEase.create('cinematic', '0.83,0,0.17,1') : 'power3.inOut',
+  silk: hasCE ? CustomEase.create('silk', '0.4,0,0.1,1') : 'power1.inOut',
+};
+const q = new URLSearchParams(location.search);
+const FROZEN = ['p1', 'p2', 'p3', 'p5'].some(k => q.has(k));
+const AUTO = q.get('auto') !== '0' && !FROZEN;
+/* ?plate=N — review mode: show one plate only, at the top of the page */
+if (q.has('plate')) { const n = q.get('plate'); document.querySelector('header').style.display = 'none'; document.querySelectorAll('.plate').forEach(p => { if (p.id !== 'p' + n) p.style.display = 'none'; }); }
+const rmToggle = document.getElementById('rmToggle');
+const RM = () => document.documentElement.classList.contains('rm');
+function setRM(on) { document.documentElement.classList.toggle('rm', on); rmToggle.checked = on; }
+setRM(q.get('rm') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches);
+rmToggle.addEventListener('change', () => setRM(rmToggle.checked));
+
+/* ── 01 THE BUILD ───────────────────────────────────────────────────────── */
+const buildMount = document.getElementById('buildMount');
+buildMount.innerHTML = markSVG('b', { gold: true, clips: true });
+const bsvg = buildMount.querySelector('svg');
+const rect = g => bsvg.querySelector(`#b-c${g} rect`);
+const bSweep = bsvg.querySelector('.m-sweep'), bT = document.getElementById('buildT');
+let buildTL;
+function playBuild() {
+  buildTL && buildTL.kill();
+  if (RM()) { gsap.set([rect('U'), rect('M'), rect('E'), rect('R')], { attr: { y: i => [977, 614, 782, 961][i], height: i => [311, 674, 506, 327][i] } }); gsap.set(rect('S'), { attr: { y: 121, height: 493 } }); gsap.fromTo(bsvg, { opacity: 0 }, { opacity: 1, duration: .2 }); bT.textContent = '0.20'; return; }
+  buildTL = gsap.timeline({ onUpdate: () => bT.textContent = buildTL.time().toFixed(2) });
+  buildTL.set(bsvg, { opacity: 1 })
+    .set(rect('S'), { attr: { y: 614, height: 0 } })
+    .set([rect('U'), rect('M'), rect('E'), rect('R')], { attr: { y: 1288, height: 0 } })
+    .set(bSweep, { opacity: 0, attr: { x: 200 } })
+    .to(rect('S'), { attr: { y: 121, height: 493 }, duration: .5, ease: E.outExpo }, 0);
+  ['M', 'E', 'U', 'R'].forEach((g, i) => buildTL.to(rect(g), { attr: { y: TOP[g], height: 1288 - TOP[g] }, duration: .7, ease: E.outQuint }, .38 + i * .09));
+  buildTL.set(bSweep, { opacity: 1 }, .95).to(bSweep, { attr: { x: 1250 }, duration: .5, ease: E.inOutSoft }, .95).set(bSweep, { opacity: 0 });
+  if (q.has('p1')) { const t = parseFloat(q.get('p1')); buildTL.pause(t); bT.textContent = t.toFixed(2); }
+}
+document.getElementById('replay1').addEventListener('click', playBuild);
+if (q.has('p1')) playBuild();
+
+/* ── 02 THE CURTAIN ─────────────────────────────────────────────────────── */
+/* five columns = the mark's massing spread across the viewport; the spire strip sits in the M column and leads */
+const COLS = [
+  { x0: 0.00, x1: 0.20, lag: 0.14 },            // U
+  { x0: 0.20, x1: 0.34, lag: 0.07 },            // M, left arch
+  { x0: 0.34, x1: 0.55, lag: 0.00 },            // M, core
+  { x0: 0.55, x1: 0.78, lag: 0.05 },            // E
+  { x0: 0.78, x1: 1.00, lag: 0.16 },            // R
+];
+const SPIRE_STRIP = { x0: 0.437, x1: 0.453, lag: -0.08 };
+const cinematic = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;   // ≈ cubic-bezier(.83,0,.17,1)
+const curtainPath = document.getElementById('curtainPath'), curtainMarker = document.getElementById('curtainMarker');
+const pageA = document.getElementById('pageA'), pageB = document.getElementById('pageB');
+const W = 1600, H = 900;
+function colTop(c, p) { const u = Math.min(1, Math.max(0, (p - c.lag) / (1 - 0.16))); return H * (1 - cinematic(u)); }
+const curtainEdge = document.getElementById('curtainEdge');
+function drawCurtain(p) {                               // p ∈ [0,1] rise, [1,2] exit
+  let d = '', e = '';
+  const rise = Math.min(p, 1), exit = Math.max(0, p - 1);
+  [...COLS, SPIRE_STRIP].forEach(c => {
+    const top = colTop(c, rise);
+    const bottom = exit > 0 ? colTop(c, exit) : H;
+    if (bottom > top) {
+      d += `M${(c.x0 * W).toFixed(1)} ${top.toFixed(1)}H${(c.x1 * W).toFixed(1)}V${bottom.toFixed(1)}H${(c.x0 * W).toFixed(1)}Z`;
+      // a hairline of light on the leading edge (the tower's lit edge); on exit the trailing edge carries it
+      const lead = exit > 0 ? bottom : top;
+      if (lead > 0 && lead < H) e += `M${(c.x0 * W).toFixed(1)} ${lead.toFixed(1)}H${(c.x1 * W).toFixed(1)}`;
+    }
+  });
+  curtainPath.setAttribute('d', d); curtainEdge.setAttribute('d', e);
+}
+drawCurtain(0);
+let showingA = true, curtainTL;
+function playCurtain() {
+  curtainTL && curtainTL.kill();
+  const from = showingA ? pageA : pageB, to = showingA ? pageB : pageA;
+  curtainMarker.textContent = showingA ? 'PROJECTS · MONTIVA' : 'LVL 00 · GROUND';
+  if (RM()) { gsap.to(from, { opacity: 0, duration: .2, onComplete: () => { from.hidden = true; to.hidden = false; gsap.fromTo(to, { opacity: 0 }, { opacity: 1, duration: .2 }); } }); showingA = !showingA; return; }
+  const s = { p: 0 };
+  curtainTL = gsap.timeline()
+    .to(s, { p: 1, duration: .9, ease: 'none', onUpdate: () => drawCurtain(s.p) })
+    .add(() => { from.hidden = true; to.hidden = false; })
+    .to(curtainMarker, { opacity: 1, duration: .2 }, .78)
+    .to(curtainMarker, { opacity: 0, duration: .2 }, 1.15)
+    .to(s, { p: 2, duration: .6, ease: 'none', onUpdate: () => drawCurtain(s.p) }, 1.2)
+    .add(() => { drawCurtain(0); showingA = !showingA; });
+}
+document.getElementById('replay2').addEventListener('click', playCurtain);
+if (q.has('p2')) { const p = parseFloat(q.get('p2')); drawCurtain(p); if (p >= 1) { pageA.hidden = true; pageB.hidden = false; } curtainMarker.style.opacity = (p > .8 && p < 1.3) ? 1 : 0; }
+
+/* ── 03 PROGRESS ────────────────────────────────────────────────────────── */
+const stage3 = document.getElementById('stage3');
+document.getElementById('bigMount').innerHTML = markSVG('pb', { gauge: true });
+document.getElementById('smallMount').insertAdjacentHTML('afterbegin', markSVG('ps', { gauge: true }));
+const pct = document.getElementById('pct'), pstate = document.getElementById('pstate'), scrub = document.getElementById('scrub');
+const prog = { p: 0 };
+let glintDone = false;
+function applyProgress() {
+  stage3.style.setProperty('--p', prog.p.toFixed(4));
+  pct.textContent = Math.round(prog.p * 100) + '%';
+  scrub.value = Math.round(prog.p * 100);
+  if (prog.p >= 0.999) {
+    pstate.textContent = 'Ready';
+    if (!glintDone && !RM()) { glintDone = true; stage3.querySelectorAll('.m-glint').forEach(g => gsap.fromTo(g, { opacity: 0 }, { opacity: 1, duration: .5, ease: E.inOutSoft, yoyo: true, repeat: 1 })); stage3.querySelectorAll('.m-letters').forEach(l => gsap.fromTo(l, { color: '#DEC6A2' }, { color: '#F4EADD', duration: .6, ease: E.silk })); }
+  } else { pstate.textContent = 'Loading'; glintDone = false; }
+}
+scrub.addEventListener('input', () => { gsap.killTweensOf(prog); prog.p = scrub.value / 100; applyProgress(); });
+function simulate() {
+  gsap.killTweensOf(prog); prog.p = 0; applyProgress();
+  if (RM()) { prog.p = 1; applyProgress(); return; }
+  gsap.timeline().to(prog, { p: .72, duration: .9, ease: E.outExpo, onUpdate: applyProgress }).to(prog, { p: .72, duration: .35 }).to(prog, { p: 1, duration: .5, ease: E.outQuint, onUpdate: applyProgress });
+}
+document.getElementById('simulate').addEventListener('click', simulate);
+if (q.has('p3')) prog.p = Math.min(1, Math.max(0, parseFloat(q.get('p3'))));
+applyProgress();
+
+/* ── 04 IDLE ────────────────────────────────────────────────────────────── */
+document.querySelectorAll('#stage4 .mark-slot').forEach((slot, i) => { slot.innerHTML = markSVG('i' + i, {}); slot.querySelector('svg').style.height = slot.dataset.h + 'px'; });
+let sweptOnce = false;
+document.getElementById('sweepBtn').addEventListener('click', () => {
+  if (RM()) return;
+  const sw = document.querySelector('#idleMark .m-sweep');
+  gsap.timeline().set(sw, { opacity: 1, attr: { x: 200 } }).to(sw, { attr: { x: 1250 }, duration: .9, ease: E.inOutSoft }).set(sw, { opacity: 0 });
+  sweptOnce = true;
+});
+
+/* ── autoplay plates 01–03 the first time they scroll into view ─────────── */
+if (AUTO) {
+  const once = new Set();
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting || once.has(e.target.id)) return; once.add(e.target.id);
+    if (e.target.id === 'stage1') setTimeout(playBuild, 300);
+    if (e.target.id === 'stage2') setTimeout(playCurtain, 600);
+    if (e.target.id === 'stage3') setTimeout(simulate, 400);
+  }), { threshold: .5 });
+  ['stage1', 'stage2', 'stage3'].forEach(id => io.observe(document.getElementById(id)));
+} else { gsap.set(bsvg, { opacity: 1 }); }
+</script>
+
+<!-- ═══════════════════════ 05 THE HANDOFF (three.js) ═══════════════════════ -->
+<script type="importmap">{ "imports": { "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.180.0/three.module.min.js" } }</script>
+<script type="module">
+import * as THREE from 'three';
+const PATHS = window.PATHS;
+const q = new URLSearchParams(location.search);
+const RM = () => document.documentElement.classList.contains('rm');
+const FREEZE = q.has('p5') ? parseFloat(q.get('p5')) : null;
+const C = { night0: 0x05060A, night1: 0x0A0B12, night2: 0x10121B, ch50: 0xFBF7F0, ch100: 0xF4EADD, ch200: 0xEAD2AE, ch300: 0xDEC6A2, ch500: 0xC6A06C, mauve: 0x5A4356, rim: 0x6E7BB0 };
+const col = (h, k = 1) => new THREE.Color(h).multiplyScalar(k);
+const stage = document.getElementById('stage5'), canvas = document.getElementById('gl'), cap = document.getElementById('cap5');
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
+renderer.toneMapping = THREE.NoToneMapping; renderer.setClearColor(C.night0, 1);
+if ('transmissionResolutionScale' in renderer) renderer.transmissionResolutionScale = 0.8;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(30, 16 / 10, 0.1, 100);
+
+/* studio environment (DIRECTION §6 common law) */
+(function env() {
+  const s = new THREE.Scene();
+  s.add(new THREE.Mesh(new THREE.SphereGeometry(40, 24, 16), new THREE.MeshBasicMaterial({ color: col(C.night1, .35), side: THREE.BackSide })));
+  const panel = (w, h, c, k, p) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: col(c, k), side: THREE.DoubleSide })); m.position.copy(p); m.lookAt(0, 2, 0); s.add(m); };
+  panel(7, 3.4, C.ch200, 7, new THREE.Vector3(-7, 8.5, 4.5)); panel(1.2, 9, C.rim, 3.2, new THREE.Vector3(7.5, 4, -6)); panel(26, .7, C.ch500, 1.4, new THREE.Vector3(0, .6, -14)); panel(2, 2, C.ch50, 1.2, new THREE.Vector3(1, 12, 1)); panel(3, 1.2, C.mauve, .8, new THREE.Vector3(10, 1.5, 6));
+  const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromScene(s, .035).texture; pm.dispose();
+})();
+
+/* ── glyphs → THREE.Shape (mark units → world: 1 unit = 1/146 of the mark height; baseline y=0) ── */
+const S = 0.00682;                                           // 0.011 × 0.62
+const toWorld = (x, y) => [(x - 800) * S, (1280 - y) * S];
+function shapeFrom(d) {
+  const subs = d.trim().split(/(?=M)/).filter(Boolean).map(s => { const n = s.replace(/[MLZ]/g, ' ').trim().split(/\s+/).map(Number); const pts = []; for (let i = 0; i < n.length; i += 2) { const [x, y] = toWorld(n[i], n[i + 1]); pts.push(new THREE.Vector2(x, y)); } return pts; });
+  const sh = new THREE.Shape(subs[0]); for (let i = 1; i < subs.length; i++) sh.holes.push(new THREE.Path(subs[i]));
+  return sh;
+}
+const glyphShapes = { U: shapeFrom(PATHS.U), M: shapeFrom(PATHS.M), E: shapeFrom(PATHS.E), R: shapeFrom(PATHS.R), S: shapeFrom(PATHS.SPIRE) };
+
+/* gradient texture for the flat mark (the logo's champagne) */
+const gradTex = (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 256; const g = c.getContext('2d');
+  const v = g.createLinearGradient(0, 256, 0, 0); v.addColorStop(0, '#D9B484'); v.addColorStop(.5, '#E6CDAE'); v.addColorStop(1, '#EAD2AE'); g.fillStyle = v; g.fillRect(0, 0, 256, 256);
+  const d = g.createLinearGradient(0, 256, 256, 0); d.addColorStop(.42, 'rgba(255,255,255,0)'); d.addColorStop(.55, 'rgba(255,255,255,.85)'); d.addColorStop(.6, 'rgba(255,255,255,1)'); d.addColorStop(.72, 'rgba(255,255,255,0)'); g.fillStyle = d; g.fillRect(0, 0, 256, 256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+const flatMat = new THREE.MeshBasicMaterial({ map: gradTex, transparent: true, opacity: 1, side: THREE.DoubleSide });
+const glass = new THREE.MeshPhysicalMaterial({ color: col(C.ch100), roughness: .07, metalness: 0, transmission: 1, ior: 2.05, thickness: 1.2, attenuationColor: new THREE.Color(C.ch200), attenuationDistance: 3.2, specularColor: new THREE.Color(C.ch50), clearcoat: 1, clearcoatRoughness: .08, iridescence: .18, iridescenceIOR: 1.6, iridescenceThicknessRange: [120, 380], envMapIntensity: 1.7 });
+if ('dispersion' in glass) glass.dispersion = .42;
+const glyphGlass = glass.clone(); glyphGlass.transparent = true; glyphGlass.opacity = 1;
+
+const markGroup = new THREE.Group(); scene.add(markGroup);
+const bb = { minX: (558 - 800) * S, maxX: (1042 - 800) * S, minY: 0, maxY: (1280 - 129) * S };
+const flatMeshes = [], glassMeshes = [], sampleGeos = [];
+for (const k of ['U', 'M', 'E', 'R', 'S']) {
+  const sg = new THREE.ShapeGeometry(glyphShapes[k]);
+  const uv = sg.attributes.uv, pos = sg.attributes.position;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, (pos.getX(i) - bb.minX) / (bb.maxX - bb.minX), (pos.getY(i) - bb.minY) / (bb.maxY - bb.minY));
+  const flat = new THREE.Mesh(sg, flatMat); flat.renderOrder = 2; markGroup.add(flat); flatMeshes.push(flat); sampleGeos.push(sg);
+  const eg = new THREE.ExtrudeGeometry(glyphShapes[k], { depth: .34, bevelEnabled: false }); eg.translate(0, 0, -.17);
+  const gm = new THREE.Mesh(eg, glyphGlass); gm.scale.z = .02; gm.renderOrder = 1; markGroup.add(gm); glassMeshes.push(gm);
+}
+
+/* ── the crystal: each shaft stands exactly where its letter stood, as tall as the letter ── */
+const shaftDefs = [
+  { g: 'U', x: toWorld(606, 0)[0], z: .18, n: 6, th: .3, sx: 1, sz: .78, seed: 11, tiers: [{ h: 1.5, r: .33 }, { h: .40, r: .24 }, { h: .17, r: .16 }] },
+  { g: 'M', x: toWorld(745, 0)[0], z: -.05, n: 8, th: .1, sx: 1, sz: .86, seed: 23, tiers: [{ h: 2.6, r: .55 }, { h: 1.0, r: .42 }, { h: .6, r: .30 }, { h: .34, r: .20 }], spire: { r0: .075, r1: .022, h: 3.2 } },
+  { g: 'E', x: toWorld(887, 0)[0], z: -.22, n: 7, th: .6, sx: .92, sz: 1, seed: 37, tiers: [{ h: 2.4, r: .33 }, { h: .7, r: .25 }, { h: .3, r: .17 }] },
+  { g: 'R', x: toWorld(995, 0)[0], z: .12, n: 5, th: .9, sx: 1, sz: .9, seed: 51, tiers: [{ h: 1.6, r: .33 }, { h: .40, r: .24 }, { h: .18, r: .16 }] },
+];
+function buildShaft(def) {
+  const P = []; const tri = (a, b, c) => P.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
+  const jit = []; let s = def.seed; for (let k = 0; k < def.n; k++) { s = (s * 9301 + 49297) % 233280; jit.push(((s / 233280) - .5) * (Math.PI * 2 / def.n) * .34); }
+  const ring = (r, y) => { const a = []; for (let k = 0; k < def.n; k++) { const t = def.th + (k / def.n) * Math.PI * 2 + jit[k]; a.push(new THREE.Vector3(Math.cos(t) * r * def.sx, y, Math.sin(t) * r * def.sz)); } return a; };
+  const _ab = new THREE.Vector3(), _ac = new THREE.Vector3(), _n = new THREE.Vector3();
+  const quad = (a, b, c, d) => { const cx = (a.x + b.x + c.x + d.x) / 4, cz = (a.z + b.z + c.z + d.z) / 4; _ab.subVectors(b, a); _ac.subVectors(c, a); _n.crossVectors(_ab, _ac); if (_n.x * cx + _n.z * cz >= 0) { tri(a, b, c); tri(a, c, d); } else { tri(a, c, b); tri(a, d, c); } };
+  const cap = (rg) => { const c = new THREE.Vector3(0, rg[0].y, 0); for (let k = 0; k < rg.length; k++) { const a = rg[k], b = rg[(k + 1) % rg.length]; _ab.subVectors(a, c); _ac.subVectors(b, c); _n.crossVectors(_ab, _ac); if (_n.y >= 0) tri(c, a, b); else tri(c, b, a); } };
+  let y = -0.05, prev = ring(def.tiers[0].r, y); const CH = .1;
+  def.tiers.forEach((t, i) => { const top = ring(t.r * .965, y + t.h); for (let k = 0; k < def.n; k++) quad(prev[k], prev[(k + 1) % def.n], top[(k + 1) % def.n], top[k]); y += t.h; prev = top; const nx = def.tiers[i + 1]; if (nx) { const r2 = ring(nx.r, y + CH); for (let k = 0; k < def.n; k++) quad(prev[k], prev[(k + 1) % def.n], r2[(k + 1) % def.n], r2[k]); y += CH; prev = r2; } });
+  if (def.spire) { const base = ring(def.spire.r0, y); for (let k = 0; k < def.n; k++) quad(prev[k], prev[(k + 1) % def.n], base[(k + 1) % def.n], base[k]); const tip = ring(def.spire.r1, y + def.spire.h); for (let k = 0; k < def.n; k++) quad(base[k], base[(k + 1) % def.n], tip[(k + 1) % def.n], tip[k]); cap(tip); y += def.spire.h; } else cap(prev);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.computeVertexNormals(); return { geo: g, height: y };
+}
+const sparkle = new THREE.ShaderMaterial({ transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, uniforms: { uL1: { value: new THREE.Vector3(-.6, .6, .5).normalize() }, uL2: { value: new THREE.Vector3(.7, .2, -.6).normalize() }, uWarm: { value: col(C.ch200) }, uCool: { value: col(C.rim) }, uGain: { value: 1 } },
+  vertexShader: `varying vec3 vN,vW; void main(){ vN=normalize(mat3(modelMatrix)*normal); vec4 wp=modelMatrix*vec4(position,1.); vW=wp.xyz; gl_Position=projectionMatrix*viewMatrix*wp; }`,
+  fragmentShader: `uniform vec3 uL1,uL2,uWarm,uCool; uniform float uGain; varying vec3 vN,vW; void main(){ vec3 N=normalize(vN),V=normalize(cameraPosition-vW); float f=pow(1.-clamp(dot(N,V),0.,1.),3.5); float s1=pow(max(dot(N,normalize(uL1+V)),0.),320.); float s2=pow(max(dot(N,normalize(uL2+V)),0.),180.); gl_FragColor=vec4((uWarm*(s1*3.2)+uCool*(s2*.9)+uWarm*f*.22)*uGain,1.); }` });
+const prism = new THREE.Group(); scene.add(prism);
+const shafts = shaftDefs.map(def => { const { geo } = buildShaft(def); const g = new THREE.Group(); g.position.set(def.x, 0, def.z); const m = new THREE.Mesh(geo, glass); m.renderOrder = 1; g.add(m); const sp = new THREE.Mesh(geo, sparkle); sp.renderOrder = 3; g.add(sp);
+  const strand = new THREE.Mesh(new THREE.BoxGeometry(.02, def.tiers.reduce((a, t) => a + t.h, 0) * .9, .02), new THREE.MeshBasicMaterial({ color: col(C.ch200, def.spire ? 2.6 : 1.7) })); strand.position.y = def.tiers.reduce((a, t) => a + t.h, 0) * .47; g.add(strand);
+  if (def.spire) { const sl = new THREE.Mesh(new THREE.BoxGeometry(.012, 2.6, .012), new THREE.MeshBasicMaterial({ color: col(C.ch100, 3.5) })); sl.position.y = def.tiers.reduce((a, t) => a + t.h, 0) + 1.5; g.add(sl); }
+  g.scale.y = 0.0001; prism.add(g); return g; });
+
+/* floor + mirrored ghosts */
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshPhysicalMaterial({ color: col(C.night0), roughness: .3, clearcoat: .9, clearcoatRoughness: .35, transparent: true, opacity: .78, envMapIntensity: .9 }));
+floor.rotation.x = -Math.PI / 2; floor.position.y = -0.001; floor.renderOrder = 2; scene.add(floor);
+const ghostMat = new THREE.MeshPhysicalMaterial({ color: col(C.night2), roughness: .14, metalness: .15, clearcoat: 1, clearcoatRoughness: .1, transparent: true, opacity: .5, envMapIntensity: .9 });
+const mirror = new THREE.Group(); mirror.scale.y = -1; scene.add(mirror);
+const ghosts = shafts.map(g => { const c = g.clone(true); c.traverse(o => { if (o.isMesh) { if (o.material === glass) o.material = ghostMat; else if (o.material === sparkle) o.visible = false; else { o.material = o.material.clone(); o.material.color.multiplyScalar(.45); } } }); mirror.add(c); return c; });
+
+/* horizon + haze behind (refracted through the glass) */
+const gradientTexture = (w, h, paint) => { const c = document.createElement('canvas'); c.width = w; c.height = h; paint(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+const horizon = new THREE.Mesh(new THREE.PlaneGeometry(20, 1.1), new THREE.MeshBasicMaterial({ map: gradientTexture(512, 128, (g, w, h) => { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(234,210,174,0)'); gr.addColorStop(.5, 'rgba(234,210,174,1)'); gr.addColorStop(1, 'rgba(234,210,174,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); const gx = g.createLinearGradient(0, 0, w, 0); gx.addColorStop(0, 'rgba(0,0,0,1)'); gx.addColorStop(.5, 'rgba(0,0,0,0)'); gx.addColorStop(1, 'rgba(0,0,0,1)'); g.globalCompositeOperation = 'destination-out'; g.fillStyle = gx; g.fillRect(0, 0, w, h); }), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, color: col(C.ch300, .9) }));
+horizon.position.set(0, .45, -9); scene.add(horizon);
+const haze = new THREE.Mesh(new THREE.PlaneGeometry(30, 18), new THREE.MeshBasicMaterial({ map: gradientTexture(256, 256, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, 'rgba(90,67,86,.55)'); gr.addColorStop(.45, 'rgba(43,47,74,.35)'); gr.addColorStop(1, 'rgba(43,47,74,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); }), transparent: true, depthWrite: false }));
+haze.position.set(0, 3, -12); scene.add(haze);
+
+/* ── dissolve particles: sampled on the glyph faces, rise and gather to the shaft axes ── */
+const N = 2600;
+const aOrigin = new Float32Array(N * 3), aSeed = new Float32Array(N), aAxis = new Float32Array(N);
+(function sample() {
+  const tris = [];
+  sampleGeos.forEach((g, gi) => { const p = g.attributes.position, idx = g.index; const axisX = shaftDefs[Math.min(gi, 3)].x; for (let i = 0; i < idx.count; i += 3) { const a = new THREE.Vector3().fromBufferAttribute(p, idx.getX(i)), b = new THREE.Vector3().fromBufferAttribute(p, idx.getX(i + 1)), c = new THREE.Vector3().fromBufferAttribute(p, idx.getX(i + 2)); const area = new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(c, a)).length() / 2; tris.push({ a, b, c, area, axisX }); } });
+  const total = tris.reduce((s, t) => s + t.area, 0);
+  for (let i = 0; i < N; i++) { let r = Math.random() * total, t = tris[0]; for (const tr of tris) { r -= tr.area; if (r <= 0) { t = tr; break; } } let u = Math.random(), v = Math.random(); if (u + v > 1) { u = 1 - u; v = 1 - v; } aOrigin[i * 3] = t.a.x + (t.b.x - t.a.x) * u + (t.c.x - t.a.x) * v; aOrigin[i * 3 + 1] = t.a.y + (t.b.y - t.a.y) * u + (t.c.y - t.a.y) * v; aOrigin[i * 3 + 2] = (Math.random() - .5) * .3; aSeed[i] = Math.random(); aAxis[i] = t.axisX; }
+})();
+const dustGeo = new THREE.BufferGeometry();
+dustGeo.setAttribute('position', new THREE.BufferAttribute(aOrigin, 3)); dustGeo.setAttribute('aSeed', new THREE.BufferAttribute(aSeed, 1)); dustGeo.setAttribute('aAxis', new THREE.BufferAttribute(aAxis, 1));
+const dustMat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { uP: { value: 0 }, uScale: { value: 46 }, uColor: { value: col(C.ch200, .9) } },
+  vertexShader: `attribute float aSeed, aAxis; uniform float uP, uScale; varying float vA;
+    void main(){ float t = clamp((uP - aSeed*.35)/.65, 0., 1.); float e = 1. - pow(1.-t, 3.);
+      vec3 p = position; p.y += e * (1.2 + aSeed*3.4); p.x = mix(p.x, aAxis, e*.7); p.z += sin(aSeed*40. + uP*6.)*.18*e;
+      vA = smoothstep(0., .08, t) * (1. - smoothstep(.55, 1., t));
+      vec4 mv = modelViewMatrix * vec4(p, 1.); gl_Position = projectionMatrix * mv; gl_PointSize = (1.6 + aSeed*2.2) * uScale / -mv.z; }`,
+  fragmentShader: `uniform vec3 uColor; varying float vA; void main(){ float d = length(gl_PointCoord - .5); float a = smoothstep(.5, .15, d) * vA; gl_FragColor = vec4(uColor * a, a); }` });
+const dust = new THREE.Points(dustGeo, dustMat); dust.frustumCulled = false; scene.add(dust);
+
+/* ── post: bloom + composite (ported from prototype/crystal.html) ── */
+const RT = (w, h, samples = 0, depth = true) => new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, depthBuffer: depth, samples, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+let rtScene, rtHalfA, rtHalfB, rtQuartA, rtQuartB;
+const quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1), quadScene = new THREE.Scene(), quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), null); quad.frustumCulled = false; quadScene.add(quad);
+const VS = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }`;
+const brightMat = new THREE.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { tDiffuse: { value: null } }, vertexShader: VS, fragmentShader: `uniform sampler2D tDiffuse; varying vec2 vUv; void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb; float l = dot(c, vec3(.2126,.7152,.0722)); gl_FragColor = vec4(c * smoothstep(.46, 1.1, l), 1.); }` });
+const blurMat = new THREE.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { tDiffuse: { value: null }, uDir: { value: new THREE.Vector2(1, 0) }, uTexel: { value: new THREE.Vector2() } }, vertexShader: VS, fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 uDir, uTexel; varying vec2 vUv; void main(){ vec2 o1 = uDir*uTexel*1.3846153846, o2 = uDir*uTexel*3.2307692308; vec4 c = texture2D(tDiffuse, vUv)*.2270270270; c += (texture2D(tDiffuse, vUv+o1)+texture2D(tDiffuse, vUv-o1))*.3162162162; c += (texture2D(tDiffuse, vUv+o2)+texture2D(tDiffuse, vUv-o2))*.0702702703; gl_FragColor = c; }` });
+const compMat = new THREE.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { tScene: { value: null }, tBloomA: { value: null }, tBloomB: { value: null }, uBloom: { value: .55 }, uExposure: { value: 1.08 }, uTime: { value: 0 }, uRes: { value: new THREE.Vector2() } }, vertexShader: VS, fragmentShader: `
+  uniform sampler2D tScene, tBloomA, tBloomB; uniform float uBloom, uExposure, uTime; uniform vec2 uRes; varying vec2 vUv;
+  vec3 fit(vec3 v){ vec3 a = v*(v+.0245786)-.000090537; vec3 b = v*(.983729*v+.4329510)+.238081; return a/b; }
+  vec3 aces(vec3 c){ const mat3 I = mat3(.59719,.07600,.02840,.35458,.90834,.13383,.04823,.01566,.83777); const mat3 O = mat3(1.60475,-.10208,-.00327,-.53108,1.10813,-.07276,-.07367,-.00605,1.07602); return clamp(O*fit(I*c),0.,1.); }
+  vec3 srgb(vec3 c){ return mix(12.92*c, 1.055*pow(c, vec3(1./2.4))-.055, step(vec3(.0031308), c)); }
+  float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233)))*43758.5453); }
+  void main(){ vec2 d = vUv-.5; vec2 off = d*dot(d,d)*.005; vec3 c; c.r = texture2D(tScene, vUv+off).r; c.g = texture2D(tScene, vUv).g; c.b = texture2D(tScene, vUv-off).b;
+    c += (texture2D(tBloomA, vUv).rgb*.55 + texture2D(tBloomB, vUv).rgb*.95) * uBloom; c *= uExposure/.6; c = aces(c);
+    c *= 1. - .55*smoothstep(.3, 1.05, length(d*vec2(1.,.92))*1.35); c += (hash(vUv*uRes + fract(uTime*.37)*100.)-.5)*.018*(.35+.65*(1.-c.g));
+    gl_FragColor = vec4(srgb(clamp(c,0.,1.)), 1.); }` });
+function pass(m, t) { quad.material = m; renderer.setRenderTarget(t); renderer.render(quadScene, quadCam); }
+function blur(src, tmp, r) { blurMat.uniforms.uTexel.value.set(r / src.width, r / src.height); blurMat.uniforms.tDiffuse.value = src.texture; blurMat.uniforms.uDir.value.set(1, 0); pass(blurMat, tmp); blurMat.uniforms.tDiffuse.value = tmp.texture; blurMat.uniforms.uDir.value.set(0, 1); pass(blurMat, src); }
+
+let W = 2, H = 2, needsRender = true;
+function layout() {
+  const r = stage.getBoundingClientRect(); const dpr = Math.min(devicePixelRatio || 1, 1.5);
+  W = Math.max(2, Math.floor(r.width * dpr)); H = Math.max(2, Math.floor(r.height * dpr));
+  renderer.setPixelRatio(1); renderer.setSize(r.width, r.height, false); canvas.width = W; canvas.height = H; renderer.setViewport(0, 0, W, H);
+  camera.aspect = r.width / r.height; camera.updateProjectionMatrix();
+  [rtScene, rtHalfA, rtHalfB, rtQuartA, rtQuartB].forEach(t => t && t.dispose());
+  rtScene = RT(W, H, 4); rtHalfA = RT(W >> 1, H >> 1, 0, false); rtHalfB = RT(W >> 1, H >> 1, 0, false); rtQuartA = RT(W >> 2, H >> 2, 0, false); rtQuartB = RT(W >> 2, H >> 2, 0, false);
+  compMat.uniforms.uRes.value.set(W, H); dustMat.uniforms.uScale.value = H * .085; needsRender = true;
+}
+new ResizeObserver(layout).observe(stage);
+
+/* ── the handoff timeline: a state object GSAP drives, applied every frame ── */
+const st = { depth: .02, flat: 1, glassOp: 0, rise: [0, 0, 0, 0], dust: 0, orbit: 0, tilt: 0, t: 0 };
+const markH = (1280 - 129) * S, camD = 15.5;
+function applyState() {
+  glassMeshes.forEach(m => { m.scale.z = st.depth; });
+  flatMat.opacity = st.flat; glyphGlass.opacity = st.glassOp;
+  glassMeshes.forEach(m => m.visible = st.glassOp > .002); flatMeshes.forEach(m => m.visible = st.flat > .002);
+  shafts.forEach((g, i) => { const s = Math.max(.0001, st.rise[i]); g.scale.y = s; ghosts[i].scale.y = s; });
+  dustMat.uniforms.uP.value = st.dust; dust.visible = st.dust > 0 && st.dust < 1;
+  const yaw = -.35 + st.orbit * .9 + (st.t > 2.8 && !RM() ? (st.t - 2.8) * .05 : 0);
+  camera.position.set(Math.sin(yaw) * camD, 2.2 + st.tilt * .6, Math.cos(yaw) * camD);
+  camera.lookAt(0, markH * .42, 0);
+  const a1 = st.t * .31, a2 = -st.t * .17 + 2;
+  sparkle.uniforms.uL1.value.set(Math.cos(a1) * .85, .55, Math.sin(a1) * .85).normalize(); sparkle.uniforms.uL2.value.set(Math.cos(a2) * .9, .18, Math.sin(a2) * .9).normalize();
+  cap.textContent = `t = ${st.t.toFixed(1)}s · ${st.t < 1 ? 'the mark' : st.t < 2.8 ? 'crystallisation' : 'the spire prism'}`;
+  needsRender = true;
+}
+let tl;
+const outExpo = typeof CustomEase !== 'undefined' ? 'outExpo' : 'expo.out', inOutSoft = typeof CustomEase !== 'undefined' ? 'inOutSoft' : 'power2.inOut';
+function reset() { Object.assign(st, { depth: .02, flat: 1, glassOp: 0, rise: [0, 0, 0, 0], dust: 0, orbit: 0, tilt: 0, t: 0 }); applyState(); }
+function playHandoff() {
+  tl && tl.kill(); reset();
+  if (RM()) { Object.assign(st, { depth: 1, flat: 0, glassOp: 0, rise: [1, 1, 1, 1], dust: 1, orbit: 1, tilt: 1, t: 4 }); applyState(); gsap.fromTo(canvas, { opacity: 0 }, { opacity: 1, duration: .2 }); return; }
+  tl = gsap.timeline({ onUpdate: () => { st.t = tl.time(); applyState(); } });
+  tl.to(st, { depth: 1, duration: 1.2, ease: inOutSoft }, 0)
+    .to(st, { glassOp: 1, duration: .8, ease: inOutSoft }, .2)
+    .to(st, { flat: 0, duration: .7, ease: inOutSoft }, .5)
+    .to(st, { orbit: 1, tilt: 1, duration: 3.2, ease: inOutSoft }, .3);
+  [1, 2, 0, 3].forEach((i, k) => tl.to(st.rise, { [i]: 1, duration: 1.4, ease: outExpo }, 1.0 + k * .09));   // M → E → U → R
+  tl.to(st, { dust: 1, duration: 1.8, ease: 'none' }, 1.2)
+    .to(st, { glassOp: 0, duration: 1.2, ease: inOutSoft }, 1.3)
+    .to(st, { t: 4, duration: 0 }, 4.0);
+  if (FREEZE !== null) { tl.pause(FREEZE); st.t = FREEZE; applyState(); }
+}
+document.getElementById('replay5').addEventListener('click', playHandoff);
+document.getElementById('scrub5').addEventListener('click', () => { if (!tl) playHandoff(); tl.pause(1.8); st.t = 1.8; applyState(); });
+
+/* render loop: only while the plate is visible */
+let visible = false, tt = 0; const clock = new THREE.Clock();
+new IntersectionObserver(es => es.forEach(e => { visible = e.isIntersecting; if (visible) needsRender = true; }), { threshold: .1 }).observe(stage);
+function frame() {
+  const dt = Math.min(clock.getDelta(), .05); tt += dt;
+  const running = tl && tl.isActive();
+  if (visible && (needsRender || running || (st.t >= 2.8 && !RM() && FREEZE === null))) {
+    if (!running && st.t >= 2.8 && FREEZE === null) { st.t += dt; applyState(); }
+    renderer.setRenderTarget(rtScene); renderer.render(scene, camera);
+    brightMat.uniforms.tDiffuse.value = rtScene.texture; pass(brightMat, rtHalfA); blur(rtHalfA, rtHalfB, 1.6); blur(rtHalfA, rtHalfB, 1.6);
+    blurMat.uniforms.tDiffuse.value = rtHalfA.texture; blurMat.uniforms.uDir.value.set(0, 0); pass(blurMat, rtQuartA); blur(rtQuartA, rtQuartB, 2.4); blur(rtQuartA, rtQuartB, 2.4); blur(rtQuartA, rtQuartB, 2.4);
+    compMat.uniforms.tScene.value = rtScene.texture; compMat.uniforms.tBloomA.value = rtHalfA.texture; compMat.uniforms.tBloomB.value = rtQuartA.texture; compMat.uniforms.uTime.value = tt;
+    pass(compMat, null); needsRender = false;
+  }
+  requestAnimationFrame(frame);
+}
+layout(); reset(); frame();
+if (FREEZE !== null) playHandoff();
+else if (q.get('auto') !== '0') { let played = false; new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting && !played) { played = true; setTimeout(playHandoff, 500); } }), { threshold: .5 }).observe(stage); }
+</script>
+</body>
+</html>

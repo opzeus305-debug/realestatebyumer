@@ -1,0 +1,182 @@
+/* ============================================================================
+   BASE — reset, typography, grid, reveal grammar.  Source: DIRECTION.md §3–§5
+   ========================================================================== */
+@import url("../assets/fonts/fonts.css");
+
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: auto;          /* Lenis owns smooth scroll on pointer devices */
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-text);
+  font-size: var(--t-base);
+  font-weight: 400;
+  line-height: 1.6;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+img, picture, video, canvas, svg { display: block; max-width: 100%; }
+input, button, textarea, select { font: inherit; color: inherit; }
+p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
+ul, ol { list-style: none; padding: 0; }
+
+/* ─── DISPLAY TYPE ─────────────────────────────────────────────────── */
+.display, h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-variation-settings: "opsz" 144, "SOFT" 0, "WONK" 0;
+  text-wrap: balance;
+}
+h1 { font-size: var(--t-3xl); line-height: 1.0; letter-spacing: -0.02em; margin-bottom: var(--s-6); }
+h2 { font-size: var(--t-2xl); line-height: 1.1; letter-spacing: -0.015em; max-width: min(20ch, 100%);
+     font-weight: 300; margin-bottom: var(--s-6); }
+h3 { font-size: var(--t-xl);  line-height: 1.18; letter-spacing: -0.01em;  font-weight: 400; margin-bottom: var(--s-5);
+     font-variation-settings: "opsz" 72, "SOFT" 0, "WONK" 0; }
+h4 { font-size: var(--t-lg);  line-height: 1.25; letter-spacing: -0.005em; font-weight: 400; margin-bottom: var(--s-4);
+     font-variation-settings: "opsz" 48, "SOFT" 0, "WONK" 0; }
+
+.hero-headline { font-size: var(--t-4xl); line-height: 0.92; letter-spacing: -0.025em; }
+
+/* One italic word per headline, maximum. WONK belongs to the aside, not the argument. */
+em, .emphasis {
+  font-style: italic; font-weight: 300;
+  font-variation-settings: "opsz" 144, "SOFT" 20, "WONK" 1;
+}
+
+/* ─── BODY & UI ────────────────────────────────────────────────────── */
+p { max-width: min(var(--measure), 100%); text-wrap: pretty; }
+p + p { margin-top: 1.6em; }
+.lead { font-size: var(--t-md); font-weight: 300; line-height: 1.6; color: var(--fg-muted); max-width: min(54ch, 100%); }
+
+/* eyebrow sits above its heading with a measured gap */
+.eyebrow { margin-bottom: var(--s-5); }
+.eyebrow, .label {
+  font-family: var(--font-text);
+  font-size: var(--t-xs);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+}
+
+/* ─── DATA — figures must read as recorded, not claimed ────────────── */
+.data, table, .numeral-unit {
+  font-family: var(--font-data);
+  font-variant-numeric: lining-nums tabular-nums;
+  font-weight: 400;
+}
+.numeral {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-variation-settings: "opsz" 144, "SOFT" 0, "WONK" 0;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1;
+  color: var(--accent-strong);
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:not([class]) {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1px; background-position: 0 100%; background-repeat: no-repeat;
+  transition: background-size var(--d-fast) var(--ease-silk);
+}
+a:not([class]):hover { background-size: 100% 1px; }
+
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
+:focus:not(:focus-visible) { outline: none; }
+
+::selection { background: var(--champagne-200); color: var(--night-1); }
+
+/* ─── LAYOUT — the setback rule (§4.2): the column narrows as we ascend ── */
+.shell { width: 100%; max-width: var(--content-max); margin-inline: auto; padding-inline: var(--margin-x); }
+.grid  { display: grid; grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr)); gap: var(--grid-gap); }
+/* Grid items default to min-width:auto, so any wide child (the ledger's
+   760px table) would force the whole grid past the viewport. */
+.grid > * { min-width: 0; }
+section { padding-block: var(--section-y); position: relative; }
+
+/* Ascent levels — column span narrows toward the spire */
+.level-ground   { grid-column: 1 / -1; }
+.level-structure{ grid-column: 2 / span 10; }
+.level-massing  { grid-column: 1 / -1; }
+.level-spire    { grid-column: 3 / span 8; }
+.level-point    { grid-column: 4 / span 6; }
+.level-return   { grid-column: 2 / span 10; }
+
+/* Headlines sit on column 2 — column 1 is the ledger margin (elevation marker + spire line) */
+.section-head { grid-column: 2 / span 9; margin-bottom: var(--s-8); }
+.section-head > :last-child { margin-bottom: 0; }
+
+@media (max-width: 1023px) {
+  :root { --grid-cols: 8; }
+  .level-structure, .level-spire, .level-point, .level-return, .section-head { grid-column: 1 / -1; }
+}
+@media (max-width: 767px) { :root { --grid-cols: 4; } }
+
+.bleed { width: 100vw; margin-left: 50%; transform: translateX(-50%); }
+
+/* Paper band — the single permitted background inversion (§2.4) */
+.paper { background: var(--paper-1); color: var(--ink-1); }
+.paper .eyebrow, .paper .label { color: var(--ink-3); }
+.paper .lead { color: var(--ink-2); }
+.paper .numeral { color: var(--gilt); }
+
+hr, .hairline { border: 0; height: 1px; background: var(--hairline); width: 100%; }
+
+/* ─── REVEAL GRAMMAR — the only four reveals (§5.4) ─────────────────── */
+.r-line   { display: block; overflow: hidden; }
+.r-line > * {
+  display: block;
+  transform: translateY(110%); opacity: 0;
+  transition: transform 900ms var(--ease-out-quint), opacity 900ms var(--ease-out-quint);
+  transition-delay: var(--delay, 0ms);
+}
+.is-in .r-line > *, .r-line.is-in > * { transform: translateY(0); opacity: 1; }
+
+.r-rise {
+  transform: translateY(24px); opacity: 0;
+  transition: transform var(--d-slow) var(--ease-out-expo), opacity var(--d-slow) var(--ease-out-expo);
+  transition-delay: var(--delay, 0ms);
+}
+.r-rise.is-in { transform: none; opacity: 1; }
+
+.r-mask { clip-path: inset(0 0 100% 0); transition: clip-path 900ms var(--ease-out-expo); transition-delay: var(--delay, 0ms); }
+.r-mask.is-in { clip-path: inset(0); }
+.r-mask > img, .r-mask > canvas { transform: scale(1.08); transition: transform 1400ms var(--ease-out-expo); }
+.r-mask.is-in > img, .r-mask.is-in > canvas { transform: scale(1); }
+
+.r-draw { transform: scaleX(0); transform-origin: left center;
+          transition: transform var(--d-slow) var(--ease-out-expo); transition-delay: var(--delay, 0ms); }
+.r-draw.is-in { transform: scaleX(1); }
+.r-draw--up { transform: scaleY(0); transform-origin: bottom center; }
+.r-draw--up.is-in { transform: scaleY(1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .r-line > *, .r-rise { transform: none !important; opacity: 1 !important; }
+  .r-mask { clip-path: none !important; }
+  .r-mask > img, .r-mask > canvas { transform: none !important; }
+  .r-draw, .r-draw--up { transform: none !important; }
+}
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.skip-link {
+  position: absolute; top: -100%; left: var(--s-4); z-index: 999;
+  background: var(--accent); color: var(--on-accent); padding: var(--s-3) var(--s-5);
+  font-size: var(--t-xs); letter-spacing: 0.16em; text-transform: uppercase;
+}
+.skip-link:focus { top: var(--s-4); }

@@ -1,0 +1,92 @@
+/* ============================================================================
+   THE UMER MARK — traced SVG of the logo (paths by Fable 5.1).
+   The spire is a separate path so it doubles as the ascent gauge: set
+   --p (0→1) on .mark and the spire fills bottom-to-top.
+   ========================================================================== */
+
+.mark {
+  display: block;
+  height: var(--mark-h, 46px);
+  color: var(--champagne-200);
+  text-decoration: none;
+  flex: none;
+  transition: color var(--d-base) var(--ease-silk);
+}
+.mark svg { height: 100%; width: auto; display: block; overflow: visible; }
+
+.m-letters {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.1px;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}
+
+/* the spire: unlit track + champagne fill clipped by --p */
+.m-spire-track {
+  fill: var(--cream-400); stroke: var(--cream-400);
+  stroke-width: 1px; vector-effect: non-scaling-stroke;
+  transition: fill var(--d-base) var(--ease-silk), stroke var(--d-base) var(--ease-silk);
+}
+.m-spire-fill {
+  fill: var(--champagne-200); stroke: var(--champagne-200);
+  stroke-width: 1.1px; vector-effect: non-scaling-stroke;
+  clip-path: inset(calc((1 - var(--p, 0)) * 100%) 0 0 0);
+  transition: clip-path 140ms linear;
+}
+
+/* the glint at the spire tip — rare, and earned */
+.m-glint { fill: var(--champagne-50); opacity: 0; }
+.mark.glint .m-glint { animation: mark-glint 1200ms var(--ease-in-out-soft) 1; }
+@keyframes mark-glint { 0%, 100% { opacity: 0; } 45% { opacity: 1; } }
+
+/* the specular sweep across the letterforms — once, on arrival */
+.m-sweep { fill: var(--champagne-50); opacity: 0; transform: translateX(-600px); }
+.mark.sweep .m-sweep { animation: mark-sweep 900ms var(--ease-in-out-soft) 1 forwards; }
+@keyframes mark-sweep {
+  0%   { opacity: 0;    transform: translateX(-600px); }
+  30%  { opacity: 0.55; }
+  100% { opacity: 0;    transform: translateX(900px); }
+}
+
+.mark:hover { color: var(--champagne-100); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mark.sweep .m-sweep, .mark.glint .m-glint { animation: none !important; opacity: 0 !important; }
+  .m-spire-fill { transition: none; }
+}
+
+/* ============================================================================
+   THE SIGNATURE BUILD (DIRECTION §5.10)
+   The spire draws upward, then the four shafts rise to meet it, then one
+   flash of light. The mark only ever does one thing: it ascends.
+   ========================================================================== */
+.mark--build .m-l {
+  transform: translateY(30%);
+  opacity: 0;
+  transform-origin: 50% 100%;
+}
+.mark--build.is-building .m-l {
+  animation: mark-rise 900ms var(--ease-out-expo) forwards;
+}
+.mark--build.is-building .m-l-u { animation-delay: 380ms; }
+.mark--build.is-building .m-l-m { animation-delay: 470ms; }
+.mark--build.is-building .m-l-e { animation-delay: 560ms; }
+.mark--build.is-building .m-l-r { animation-delay: 650ms; }
+@keyframes mark-rise { to { transform: translateY(0); opacity: 1; } }
+
+/* the spire draws first, bottom to top */
+.mark--build .m-spire-track { opacity: 0; }
+.mark--build .m-spire-fill { clip-path: inset(100% 0 0 0); }
+.mark--build.is-building .m-spire-fill {
+  animation: spire-draw 560ms var(--ease-out-expo) forwards;
+}
+@keyframes spire-draw { to { clip-path: inset(0 0 0 0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .mark--build .m-l { transform: none; opacity: 1; }
+  .mark--build .m-spire-fill { clip-path: inset(0 0 0 0); }
+  .mark--build.is-building .m-l,
+  .mark--build.is-building .m-spire-fill { animation: none; }
+  .mark--build .m-spire-track { opacity: 1; }
+}

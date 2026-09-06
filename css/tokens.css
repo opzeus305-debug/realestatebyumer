@@ -1,0 +1,128 @@
+/* ============================================================================
+   REAL ESTATE BY UMER — DESIGN TOKENS
+   Concept: MEASURED ASCENT · "The numbers first. Then the view."
+   Palette sampled from the logo (Burj Khalifa wordmark, champagne gradient).
+   Source of truth: DIRECTION.md §2–§5. Do not invent values outside this file.
+   ========================================================================== */
+
+:root {
+  /* ─── NIGHT (ground) ────────────────────────────────────────────── */
+  --night-0: #05060A;
+  --night-1: #0A0B12;
+  --night-2: #10121B;
+  --night-3: #171A26;
+  --night-4: #222636;
+
+  /* ─── CHAMPAGNE (light) — 200–400 sampled from the logo ─────────── */
+  --champagne-50:  #FBF7F0;
+  --champagne-100: #F4EADD;
+  --champagne-200: #EAD2AE;
+  --champagne-300: #DEC6A2;
+  --champagne-400: #D9B484;
+  --champagne-500: #C6A06C;
+  --champagne-600: #A8834F;
+  --champagne-700: #7D5F36;
+  --champagne-800: #4A3820;
+
+  /* ─── CREAM (words) — warm, deliberately not Likova's cool grey ─── */
+  --cream-100: #F1ECE3;
+  --cream-200: #CFC9BE;
+  --cream-300: #8F8A80;
+  --cream-400: #5C584F;
+
+  /* ─── ATMOSPHERE (WebGL fog + photo grade only) ─────────────────── */
+  --dusk:  #2B2F4A;
+  --mauve: #5A4356;
+
+  /* ─── PAPER (inverted document band) ────────────────────────────── */
+  --paper-1: #F1ECE3;
+  --paper-2: #E6DFD3;
+  --ink-1:   #0A0B12;
+  --ink-2:   #4A4740;
+  --ink-3:   #7A756B;
+  --gilt:    #A8834F;
+
+  /* ─── SEMANTIC ──────────────────────────────────────────────────── */
+  --bg:             var(--night-1);
+  --bg-raised:      var(--night-2);
+  --bg-hover:       var(--night-3);
+  --fg:             var(--cream-100);
+  --fg-muted:       var(--cream-200);
+  --fg-subtle:      var(--cream-300);
+  --accent:         var(--champagne-300);
+  --accent-strong:  var(--champagne-200);
+  --accent-pressed: var(--champagne-400);
+  --on-accent:      var(--night-1);
+  --hairline:        rgba(241, 236, 227, 0.10);
+  --hairline-strong: rgba(241, 236, 227, 0.18);
+  --hairline-gold:   rgba(222, 198, 162, 0.35);
+  --overlay: rgba(10, 11, 18, 0.72);
+  --scrim:   linear-gradient(180deg, rgba(10,11,18,0) 0%, rgba(10,11,18,0.85) 100%);
+  --focus:    var(--champagne-200);
+  --positive: var(--champagne-200);   /* growth is gold — there is deliberately no green */
+  --negative: #B87C74;
+  --error:    #C98A7F;
+  --glow:     rgba(234, 210, 174, 0.22);
+
+  /* ─── TYPE FAMILIES ─────────────────────────────────────────────── */
+  --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --font-text:    "Jost", "Futura", "Century Gothic", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  --font-data:    "DM Mono", "SF Mono", "Menlo", "Consolas", "Liberation Mono", monospace;
+
+  /* ─── TYPE SCALE (fluid) ────────────────────────────────────────────
+     FLOOR: 16px. Nothing on this site renders below 1rem. Hierarchy below
+     ~20px is carried by weight, tracking, case and colour — never by size. */
+  --t-2xs:  1rem;                                              /* 16 — data, footnotes, units */
+  --t-xs:   1rem;                                              /* 16 — eyebrows, nav, buttons  */
+  --t-sm:   clamp(1.0625rem, 1.04rem + 0.1vw, 1.125rem);       /* 17 → 18 — UI, table cells    */
+  --t-base: clamp(1.125rem, 1.08rem + 0.24vw, 1.25rem);        /* 18 → 20 — body               */
+  --t-md:   clamp(1.25rem, 1.16rem + 0.42vw, 1.5rem);          /* 20 → 24 — lead               */
+  --t-lg:   clamp(1.5rem, 1.34rem + 0.78vw, 2rem);             /* 24 → 32 — card titles, h4    */
+  --t-xl:   clamp(1.875rem, 1.55rem + 1.5vw, 2.875rem);        /* 30 → 46 — h3, pull quotes    */
+  --t-2xl:  clamp(2.375rem, 1.75rem + 2.9vw, 4rem);            /* 38 → 64 — h2                 */
+  --t-3xl:  clamp(3rem, 1.9rem + 5.2vw, 6.5rem);               /* 48 → 104 — inner-page h1     */
+  --t-4xl:  clamp(3.5rem, 2.4rem + 7.2vw, 11rem);              /* 56 → 176 — giant numerals    */
+
+  /* ─── SPACE ─────────────────────────────────────────────────────── */
+  --s-1: 4px;  --s-2: 8px;   --s-3: 12px;  --s-4: 16px;
+  --s-5: 24px; --s-6: 32px;  --s-7: 48px;  --s-8: 64px;
+  --s-9: 96px; --s-10: 128px; --s-11: 192px; --s-12: 256px;
+  --section-y:   clamp(96px, 12vw, 192px);
+  --section-gap: clamp(64px, 8vw, 128px);
+  --stack-gap:   clamp(24px, 3vw, 48px);
+
+  /* ─── GRID ──────────────────────────────────────────────────────── */
+  --grid-cols: 12;
+  --grid-gap:  clamp(16px, 2vw, 32px);
+  --margin-x:  clamp(20px, 5vw, 96px);
+  --content-max: 1600px;
+  --measure: 62ch;
+
+  /* ─── EASING — entrances decelerate into rest; no bounce, ever ──── */
+  --ease-out-expo:  cubic-bezier(0.16, 1.00, 0.30, 1.00);
+  --ease-out-quint: cubic-bezier(0.22, 1.00, 0.36, 1.00);
+  --ease-in-out-soft:      cubic-bezier(0.65, 0.00, 0.35, 1.00);
+  --ease-in-out-cinematic: cubic-bezier(0.83, 0.00, 0.17, 1.00);
+  --ease-silk:      cubic-bezier(0.40, 0.00, 0.10, 1.00);
+  --ease-in-quart:  cubic-bezier(0.50, 0.00, 0.75, 0.00);
+
+  /* ─── DURATION — distance × mass ────────────────────────────────── */
+  --d-instant: 80ms;
+  --d-fast: 180ms;
+  --d-base: 320ms;
+  --d-slow: 640ms;
+  --d-cinematic: 1200ms;
+  --d-epic: 2000ms;
+  --stagger-base: 110ms;
+
+  --z-canvas: 0; --z-content: 10; --z-nav: 100; --z-curtain: 200;
+}
+
+/* Reduced motion — tier 3: nothing moves, everything is legible. §9.2 */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --d-instant: 1ms; --d-fast: 1ms; --d-base: 1ms;
+    --d-slow: 1ms; --d-cinematic: 1ms; --d-epic: 1ms;
+    --stagger-base: 0ms;
+  }
+}

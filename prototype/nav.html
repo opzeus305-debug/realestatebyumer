@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en-AE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Elevation Instrument</title>
+<meta name="description" content="Real Estate by Umer — navigation prototype. The nav as an elevation instrument: the mark's spire fills as you climb, the hairline is a floor directory, the brand label yields to a rolling level readout.">
+<!--
+  REAL ESTATE BY UMER — PROTOTYPE · NAVIGATION · "THE ELEVATION INSTRUMENT"
+  Zero dependencies (no three.js / GSAP needed). Google Fonts only.
+
+  What the nav does
+  ─────────────────
+  GROUND (top of page, scrollY < 80)
+    · 64px bar, transparent, no ground. Mark at 40px. Beside it the brand label REAL ESTATE BY UMER.
+    · Beneath the bar a 40px "directory ledge": the ten levels of the climb along a hairline rail,
+      like the floor directory in a lobby. The current level is champagne.
+  ASCENDING (scrolled)
+    · The ledge folds (320ms, ease-in-out-soft) and the rail becomes the bar's bottom hairline —
+      1px, ten notches, a champagne fill for scroll progress, a dot for the current level.
+    · The ground arrives (night-1 @ 82% + 12px blur, 320ms). The bar height does NOT change,
+      so no type in the bar moves (DIRECTION §5.8). Compression = the directory folding.
+    · The brand label crossfades to the elevation readout: LVL 04 · THE ASSET. The units digit rolls
+      like an altimeter (320ms); the name crossfades (320ms).
+    · The mark's SPIRE fills bottom→top with scroll progress — the spire progress line and the mark are
+      one object. At the top of the climb (LVL 09) the tip glints once.
+    · A single specular sweep crosses the mark the first time you reach the Spire levels (LVL 07). Once.
+    · Over the paper band (LVL 03) the nav becomes material-aware: ground → paper, text → ink,
+      the CTA flips to ink-on-paper. 320ms.
+  CTA
+    · SEND "INVEST" is always on screen, same size, same place. It never hides, bobs or slides.
+  MOBILE (< 1024px)
+    · Bar: mark · compact readout · INVEST pill · a two-hairline menu glyph.
+    · The menu is THE DIRECTORY: a full-screen panel that rises from the bottom (clip-path, 640ms,
+      ease-out-expo). Left: the mark at 132px with its spire filled to your position. Right: the ten
+      levels as a ledger (DM Mono numbers, Jost names, current row marked), then the four pages in
+      Fraunces display, then the CTA and contact in mono. Focus-trapped, Escape closes.
+  KEYBOARD
+    · Skip link, visible focus (2px champagne, 3px offset), notches and ledge items are real links,
+      menu is a dialog with a focus trap. Level changes are announced politely.
+  REDUCED MOTION
+    · Every transition drops to opacity-only ≤200ms; digits swap instead of rolling; the panel fades.
+
+  URL params for review:  ?scroll=2400  jump to a scroll position   ?menu=1  open the directory
+                          ?debug=1  show the state readout
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=Jost:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night-0:#05060A; --night-1:#0A0B12; --night-2:#10121B; --night-3:#171A26;
+    --champagne-50:#FBF7F0; --champagne-100:#F4EADD; --champagne-200:#EAD2AE; --champagne-300:#DEC6A2; --champagne-400:#D9B484; --champagne-600:#A8834F;
+    --cream-100:#F1ECE3; --cream-200:#CFC9BE; --cream-300:#8F8A80; --cream-400:#5C584F;
+    --paper-1:#F1ECE3; --paper-2:#E6DFD3; --ink-1:#0A0B12; --ink-2:#4A4740; --ink-3:#7A756B; --gilt:#A8834F;
+    --hairline:rgba(241,236,227,.10); --hairline-strong:rgba(241,236,227,.18); --hairline-gold:rgba(222,198,162,.35);
+    --glow:rgba(234,210,174,.22);
+    --font-display:"Fraunces","Iowan Old Style","Palatino Linotype",Georgia,serif;
+    --font-text:"Jost","Futura","Century Gothic","Avenir Next",Arial,sans-serif;
+    --font-data:"DM Mono","SF Mono",Menlo,Consolas,monospace;
+    --t-2xs:.6875rem; --t-xs:clamp(.75rem,.72rem + .15vw,.8125rem); --t-sm:clamp(.875rem,.85rem + .15vw,.9375rem);
+    --t-base:clamp(1rem,.95rem + .3vw,1.125rem); --t-md:clamp(1.125rem,1.05rem + .4vw,1.375rem);
+    --t-xl:clamp(1.75rem,1.4rem + 1.6vw,2.75rem); --t-2xl:clamp(2.25rem,1.6rem + 3vw,4rem); --t-3xl:clamp(3rem,1.8rem + 5.5vw,6.5rem);
+    --ease-out-expo:cubic-bezier(.16,1,.3,1); --ease-out-quint:cubic-bezier(.22,1,.36,1);
+    --ease-in-out-soft:cubic-bezier(.65,0,.35,1); --ease-in-out-cinematic:cubic-bezier(.83,0,.17,1); --ease-silk:cubic-bezier(.4,0,.1,1); --ease-in-quart:cubic-bezier(.5,0,.75,0);
+    --d-instant:80ms; --d-fast:180ms; --d-base:320ms; --d-slow:640ms; --d-cinematic:1200ms;
+    --margin:clamp(20px,5vw,96px);
+    --bar-h:64px; --ledge-h:40px;
+
+    /* material-aware nav tokens (night by default; swapped over the paper band) */
+    --nav-fg:var(--cream-100); --nav-fg-2:var(--cream-200); --nav-fg-3:var(--cream-300); --nav-fg-4:var(--cream-400);
+    --nav-accent:var(--champagne-200); --nav-accent-2:var(--champagne-300);
+    --nav-ground:rgba(10,11,18,.82); --nav-hair:var(--hairline); --nav-hair-strong:var(--hairline-strong);
+    --cta-bg:var(--champagne-300); --cta-bg-hover:var(--champagne-100); --cta-fg:var(--night-1); --cta-focus:var(--cream-100);
+  }
+  html[data-material="paper"]{
+    --nav-fg:var(--ink-1); --nav-fg-2:var(--ink-2); --nav-fg-3:var(--ink-3); --nav-fg-4:#B5AFA3;
+    --nav-accent:var(--gilt); --nav-accent-2:var(--gilt);
+    --nav-ground:rgba(241,236,227,.86); --nav-hair:rgba(10,11,18,.12); --nav-hair-strong:rgba(10,11,18,.22);
+    --cta-bg:var(--ink-1); --cta-bg-hover:#23262F; --cta-fg:var(--cream-100); --cta-focus:var(--ink-1);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--night-1);color:var(--cream-100);font-family:var(--font-text);font-size:var(--t-base);line-height:1.6;-webkit-font-smoothing:antialiased}
+  body.locked{overflow:hidden}
+  .label{font-family:var(--font-text);font-weight:500;font-size:var(--t-xs);letter-spacing:.16em;text-transform:uppercase}
+  .data{font-family:var(--font-data);font-weight:400;font-size:var(--t-2xs);letter-spacing:.04em;text-transform:uppercase;font-variant-numeric:tabular-nums}
+  a{color:inherit}
+  :focus-visible{outline:2px solid var(--champagne-200);outline-offset:3px;border-radius:2px}
+  .skip{position:fixed;top:12px;left:12px;z-index:100;background:var(--champagne-300);color:var(--night-1);padding:10px 16px;border-radius:2px;transform:translateY(-200%);transition:transform var(--d-fast) var(--ease-out-expo)}
+  .skip:focus{transform:none}
+
+  /* ══════════════════════════ NAV ══════════════════════════ */
+  .nav{position:fixed;top:0;left:0;right:0;z-index:50;color:var(--nav-fg);transition:color var(--d-base) var(--ease-silk)}
+  .nav::before{content:"";position:absolute;inset:0;background:var(--nav-ground);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);opacity:0;transition:opacity var(--d-base) var(--ease-in-out-soft),background-color var(--d-base) var(--ease-silk)}
+  .nav[data-state="ascending"]::before{opacity:1}
+  /* brand | (links) | cta | (menu) — display:none items take no track, so one template serves both breakpoints */
+  .bar{position:relative;height:var(--bar-h);display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:clamp(16px,2vw,32px);padding:0 var(--margin)}
+
+  /* mark + slot */
+  .brand{display:flex;align-items:center;gap:18px;min-width:0;overflow:hidden}
+  @media (max-width:479px){.readout .name,.readout .sep{display:none}}
+  .mark{display:block;height:40px;color:var(--nav-accent-2);text-decoration:none;flex:none;transition:color var(--d-base) var(--ease-silk)}
+  .mark svg{height:100%;width:auto;display:block;overflow:visible}
+  .m-letters{fill:currentColor;stroke:currentColor;stroke-width:1.1px;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+  .m-spire-track{fill:var(--nav-fg-4);stroke:var(--nav-fg-4);stroke-width:1px;vector-effect:non-scaling-stroke;transition:fill var(--d-base) var(--ease-silk),stroke var(--d-base) var(--ease-silk)}
+  .m-spire-fill{fill:var(--nav-accent);stroke:var(--nav-accent);stroke-width:1.1px;vector-effect:non-scaling-stroke;clip-path:inset(calc((1 - var(--p,0)) * 100%) 0 0 0);transition:fill var(--d-base) var(--ease-silk),stroke var(--d-base) var(--ease-silk)}
+  .m-glint{fill:var(--champagne-50);opacity:0;transition:opacity var(--d-slow) var(--ease-silk)}
+  .mark.glint .m-glint{opacity:1;animation:glint 1200ms var(--ease-in-out-soft) 1}
+  @keyframes glint{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+  .m-sweep{fill:url(#sweepGrad);opacity:0;transform:translateX(-600px)}
+  .mark.sweep .m-sweep{opacity:1;animation:sweep 900ms var(--ease-in-out-soft) 1 forwards}
+  @keyframes sweep{from{transform:translateX(-600px)}to{transform:translateX(600px)}}
+
+  .slot{position:relative;height:1.6em;min-width:17ch;display:grid;align-items:center}
+  .slot > *{grid-area:1/1;white-space:nowrap;transition:opacity var(--d-base) var(--ease-silk)}
+  .slot .brandname{color:var(--nav-fg-2);opacity:1}
+  .slot .readout{opacity:0;display:flex;align-items:baseline;gap:12px;color:var(--nav-fg-3)}
+  .nav[data-state="ascending"] .slot .brandname{opacity:0}
+  .nav[data-state="ascending"] .slot .readout{opacity:1}
+  .lvl{display:inline-flex;align-items:baseline;gap:.5ch;line-height:1;color:var(--nav-accent-2)}
+  .roll{display:inline-block;height:1em;overflow:hidden;vertical-align:baseline;line-height:1}
+  .roll .digits{display:flex;flex-direction:column;transition:transform var(--d-base) var(--ease-in-out-soft)}
+  .roll .digits span{display:block;height:1em;line-height:1}
+  .name{position:relative;display:inline-grid;color:var(--nav-fg-2)}
+  .name > span{grid-area:1/1;transition:opacity var(--d-base) var(--ease-silk)}
+  .name > span[aria-hidden="true"]{opacity:0}
+  .sep{color:var(--nav-fg-4)}
+  @media (max-width:1023px){.slot{min-width:0;justify-self:center}.slot .brandname{display:none}.slot .readout{opacity:1}.nav[data-state="ground"] .slot .readout{opacity:0}}
+
+  /* links */
+  .links{display:none;justify-content:flex-end;align-items:center;gap:clamp(20px,2.6vw,44px)}
+  @media (min-width:1024px){.links{display:flex}}
+  .links a{color:var(--nav-fg-2);text-decoration:none;position:relative;padding:8px 0;transition:color var(--d-fast) var(--ease-silk)}
+  .links a::after{content:"";position:absolute;left:0;right:0;bottom:2px;height:1px;background:var(--nav-accent-2);transform:scaleX(0);transform-origin:left;transition:transform var(--d-fast) var(--ease-out-expo)}
+  .links a:hover,.links a:focus-visible{color:var(--nav-fg)}
+  .links a:hover::after,.links a:focus-visible::after,.links a[aria-current="page"]::after{transform:scaleX(1)}
+
+  /* CTA — never hides, never moves */
+  .cta{display:inline-flex;align-items:center;gap:10px;height:40px;padding:0 20px;border-radius:2px;background:var(--cta-bg);color:var(--cta-fg);text-decoration:none;white-space:nowrap;transition:background-color var(--d-fast) var(--ease-silk),color var(--d-fast) var(--ease-silk),box-shadow var(--d-base) var(--ease-out-expo),transform var(--d-instant) var(--ease-out-expo)}
+  .cta:hover{background:var(--cta-bg-hover);box-shadow:0 0 32px var(--glow)}
+  .cta:active{transform:scale(.98)}
+  .cta:focus-visible{outline-color:var(--cta-focus)}
+  .cta svg{width:16px;height:16px;flex:none}
+  .cta .long{display:none}
+  @media (min-width:1024px){.cta .long{display:inline}.cta .short{display:none}}
+
+  /* menu glyph (two hairlines → ×) */
+  .menu-btn{display:grid;place-items:center;width:44px;height:44px;margin-right:-10px;background:none;border:0;color:var(--nav-fg);cursor:pointer;padding:0}
+  .menu-btn i{display:block;width:20px;height:1px;background:currentColor;transition:transform var(--d-base) var(--ease-in-out-soft)}
+  .menu-btn i+i{margin-top:7px}
+  .menu-btn[aria-expanded="true"] i:first-child{transform:translateY(4px) rotate(45deg)}
+  .menu-btn[aria-expanded="true"] i:last-child{transform:translateY(-4px) rotate(-45deg)}
+  @media (min-width:1024px){.menu-btn{display:none}}
+
+  /* rail (the floor directory) */
+  .rail{position:relative;margin:0 var(--margin);height:var(--ledge-h);transition:height var(--d-base) var(--ease-in-out-soft)}
+  .nav[data-state="ascending"] .rail{height:0}
+  .rail-line{position:absolute;left:0;right:0;top:0;height:1px;background:var(--nav-hair);transition:background-color var(--d-base) var(--ease-silk)}
+  .rail-fill{position:absolute;left:0;top:0;height:1px;width:calc(var(--p,0) * 100%);background:var(--nav-accent-2);opacity:.55}
+  .notch{position:absolute;top:-2px;width:1px;height:5px;background:var(--nav-fg-4);transform:translateX(-.5px)}
+  .rail-dot{position:absolute;top:-1.5px;width:4px;height:4px;border-radius:50%;background:var(--nav-accent);transform:translateX(-2px);transition:left var(--d-base) var(--ease-in-out-soft)}
+  .ledge{position:absolute;left:0;right:0;top:0;height:var(--ledge-h);margin:0;padding:0;list-style:none;display:flex;justify-content:space-between;align-items:center;overflow:hidden;transition:opacity var(--d-fast) var(--ease-silk)}
+  .nav[data-state="ascending"] .ledge{opacity:0;pointer-events:none}
+  .ledge li{position:relative;flex:0 0 auto}
+  .ledge a{display:inline-flex;gap:.8ch;color:var(--nav-fg-3);text-decoration:none;padding:6px 0;transition:color var(--d-fast) var(--ease-silk)}
+  .ledge a:hover,.ledge a:focus-visible{color:var(--nav-fg)}
+  .ledge a[aria-current="true"]{color:var(--nav-accent)}
+  .ledge a .nm{display:none}
+  @media (min-width:1280px){.ledge a .nm{display:inline}}
+  @media (max-width:1023px){.rail{display:none}}
+  /* notch tooltips when scrolled */
+  .notch-link{position:absolute;top:-14px;width:24px;height:28px;transform:translateX(-12px);display:block;border-radius:2px}
+  .notch-link span{position:absolute;top:26px;left:50%;transform:translateX(-50%);white-space:nowrap;color:var(--nav-fg-2);background:var(--nav-ground);padding:4px 8px;border:1px solid var(--nav-hair-strong);border-radius:2px;opacity:0;pointer-events:none;transition:opacity var(--d-fast) var(--ease-silk)}
+  .notch-link:hover span,.notch-link:focus-visible span{opacity:1}
+  .nav[data-state="ground"] .notch-link{display:none}
+
+  /* ══════════════════════════ DIRECTORY (mobile panel) ══════════════════════════ */
+  .directory{position:fixed;inset:0;z-index:60;background:rgba(5,6,10,.96);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);color:var(--cream-100);clip-path:inset(100% 0 0 0);transition:clip-path var(--d-slow) var(--ease-out-expo);overflow:auto}
+  .directory.open{clip-path:inset(0 0 0 0)}
+  .directory.closing{transition:clip-path var(--d-base) var(--ease-in-quart);clip-path:inset(0 0 100% 0)}
+  .dir-inner{min-height:100%;display:grid;grid-template-columns:minmax(72px,120px) minmax(0,1fr);gap:clamp(24px,6vw,48px);padding:calc(var(--bar-h) + 24px) var(--margin) 40px}
+  .dir-inner > div{min-width:0}
+  .dir-mark{color:var(--champagne-300)}
+  .dir-mark svg{height:clamp(120px,32vh,220px);width:auto;display:block}
+  .dir-mark .m-spire-track{fill:var(--cream-400);stroke:var(--cream-400)}
+  .dir-mark .m-spire-fill{fill:var(--champagne-200);stroke:var(--champagne-200)}
+  .dir-mark .m-letters{stroke-width:.8px}
+  .dir-mark .cap{margin-top:16px;color:var(--cream-300);line-height:1.5}
+  .dir-levels{list-style:none;margin:0;padding:0;border-top:1px solid var(--hairline)}
+  .dir-levels li{border-bottom:1px solid var(--hairline)}
+  .dir-levels a{display:grid;grid-template-columns:3ch 1fr auto;align-items:center;gap:16px;padding:11px 0;color:var(--cream-200);text-decoration:none}
+  .dir-levels a .n{color:var(--champagne-300)}
+  .dir-levels a .dot{width:5px;height:5px;border-radius:50%;background:var(--champagne-200);opacity:0}
+  .dir-levels a[aria-current="true"]{color:var(--champagne-200)}
+  .dir-levels a[aria-current="true"] .dot{opacity:1}
+  .dir-pages{margin:32px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+  .dir-pages a{font-family:var(--font-display);font-weight:300;font-variation-settings:"opsz" 72,"SOFT" 0,"WONK" 0;font-size:var(--t-xl);line-height:1.1;letter-spacing:-.01em;color:var(--cream-100);text-decoration:none;display:inline-block}
+  .dir-pages a:hover{color:var(--champagne-200)}
+  .dir-cta{margin-top:32px;display:flex;flex-wrap:wrap;gap:12px}
+  .dir-cta .cta{height:48px;padding:0 26px;--cta-bg:var(--champagne-300);--cta-fg:var(--night-1);--cta-bg-hover:var(--champagne-100)}
+  .dir-contact{margin-top:28px;color:var(--cream-300);line-height:1.9}
+  .dir-contact a{text-decoration:none}
+  .dir-inner > * , .dir-levels li, .dir-pages li{opacity:0;transform:translateY(12px)}
+  .directory.open .dir-inner > *,.directory.open .dir-levels li,.directory.open .dir-pages li{opacity:1;transform:none;transition:opacity var(--d-slow) var(--ease-out-expo),transform var(--d-slow) var(--ease-out-expo)}
+  .directory.open .dir-levels li:nth-child(n){transition-delay:calc(120ms + var(--i,0) * 40ms)}
+  .directory.open .dir-pages li{transition-delay:calc(420ms + var(--i,0) * 40ms)}
+  @media (max-width:479px){.dir-inner{grid-template-columns:1fr}.dir-mark{display:flex;align-items:flex-end;gap:16px}.dir-mark svg{height:96px}}
+
+  /* ══════════════════════════ PAGE (demo content) ══════════════════════════ */
+  main{position:relative}
+  section{position:relative;min-height:100vh;padding:calc(var(--bar-h) + var(--ledge-h) + 64px) var(--margin) clamp(96px,12vw,192px);display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:clamp(16px,2vw,32px);border-top:1px solid var(--hairline)}
+  section:first-of-type{border-top:0}
+  .marker{grid-column:1;align-self:start;justify-self:start;position:sticky;top:calc(var(--bar-h) + var(--ledge-h) + 56px);color:var(--cream-300);white-space:nowrap;writing-mode:vertical-rl;transform:rotate(180deg);line-height:1;display:inline-flex;align-items:center;gap:12px}
+  .marker::before{content:"";display:block;width:1px;height:24px;background:var(--hairline-gold)}
+  .body{grid-column:2 / span 8}
+  .eyebrow{display:flex;align-items:center;gap:16px;color:var(--champagne-300);margin:0 0 clamp(20px,2.6vw,40px)}
+  .eyebrow::before{content:"";width:24px;height:1px;background:var(--hairline-gold)}
+  h1,h2{margin:0;font-family:var(--font-display);font-weight:300;font-variation-settings:"opsz" 144,"SOFT" 0,"WONK" 0;line-height:1.02;letter-spacing:-.02em;text-wrap:balance;max-width:22ch}
+  h1{font-size:var(--t-3xl);line-height:.96;letter-spacing:-.025em}
+  h2{font-size:var(--t-2xl)}
+  h1 em,h2 em{font-style:italic;color:var(--champagne-200);font-variation-settings:"opsz" 144,"SOFT" 20,"WONK" 1}
+  .lead{font-weight:300;font-size:var(--t-md);line-height:1.55;color:var(--cream-200);max-width:46ch;margin:clamp(24px,3vw,40px) 0 0}
+  .stamp{margin-top:clamp(32px,4vw,56px);color:var(--cream-300)}
+  .stamp .dot{display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--champagne-200);vertical-align:middle;margin:0 8px 2px 0}
+  section.paper{background:var(--paper-1);color:var(--ink-1);border-top:0;background-image:radial-gradient(rgba(10,11,18,.06) .6px,transparent .6px);background-size:24px 24px}
+  section.paper .lead{color:var(--ink-2)} section.paper .eyebrow{color:var(--gilt)} section.paper .eyebrow::before{background:rgba(168,131,79,.5)} section.paper .marker{color:var(--ink-3)} section.paper h2 em{color:var(--gilt)} section.paper .stamp{color:var(--ink-3)}
+  section.tall{min-height:150vh}
+  @media (max-width:1023px){.marker{display:none}.body{grid-column:1 / -1}section{padding-top:calc(var(--bar-h) + 56px)}}
+  footer{padding:64px var(--margin);border-top:1px solid var(--hairline);color:var(--cream-300);display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}
+  .debug{position:fixed;left:var(--margin);bottom:20px;z-index:40;color:var(--cream-400);display:none}
+  .debug.on{display:block}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    *,*::before,*::after{transition-duration:0ms !important;animation-duration:0ms !important}
+    .slot > *,.name > span,.nav::before,.ledge,.notch-link span{transition-duration:200ms !important}
+    .directory,.directory.closing{transition:opacity 200ms linear !important;clip-path:none;opacity:0;pointer-events:none}
+    .directory.open{opacity:1;pointer-events:auto}
+    .dir-inner > *,.dir-levels li,.dir-pages li{transform:none !important}
+    .mark.sweep .m-sweep,.mark.glint .m-glint{animation:none !important;opacity:0 !important}
+  }
+</style>
+</head>
+<body>
+<a class="skip label" href="#main">Skip to content</a>
+
+<!-- shared gradient for the specular sweep -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="sweepGrad" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#FBF7F0" stop-opacity="0"/><stop offset=".5" stop-color="#FBF7F0" stop-opacity=".9"/><stop offset="1" stop-color="#FBF7F0" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<header class="nav" id="nav" data-state="ground">
+  <div class="bar">
+    <div class="brand">
+      <a class="mark" id="mark" href="#lvl-00" aria-label="Real Estate by Umer — back to the ground"></a>
+      <div class="slot">
+        <span class="brandname label" aria-hidden="true">Real Estate by Umer</span>
+        <div class="readout" aria-live="polite" aria-atomic="true">
+          <span class="lvl data">LVL 0<span class="roll" aria-hidden="true"><span class="digits" id="digits"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></span></span><span class="sr" id="lvlSr">0</span></span>
+          <span class="sep data">·</span>
+          <span class="name label"><span id="nameA">Ground</span><span id="nameB" aria-hidden="true"></span></span>
+        </div>
+      </div>
+    </div>
+    <nav class="links label" aria-label="Primary">
+      <a href="#" aria-current="page">Projects</a><a href="#">Method</a><a href="#">Market</a><a href="#">About</a>
+    </nav>
+    <a class="cta label" href="https://wa.me/971562419511?text=INVEST" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 20.5l1.2-4.1A8.5 8.5 0 1 1 8 19.3z"/><path d="M9 9.2c0 3 2.8 5.8 5.8 5.8l1.4-1.4-2-1-1 .8a4.5 4.5 0 0 1-2.6-2.6l.8-1-1-2z"/></svg>
+      <span class="long">Send “Invest”</span><span class="short">Invest</span>
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="directory" aria-label="Open the directory"><i></i><i></i></button>
+  </div>
+  <div class="rail" id="rail">
+    <span class="rail-line"></span><span class="rail-fill"></span>
+    <span class="rail-dot" id="railDot"></span>
+    <ol class="ledge data" id="ledge"></ol>
+    <div id="notches"></div>
+  </div>
+</header>
+
+<div class="directory" id="directory" role="dialog" aria-modal="true" aria-label="Directory" hidden>
+  <div class="dir-inner">
+    <div class="dir-mark" id="dirMark"><span class="cap data">Your position on the climb</span></div>
+    <div>
+      <ol class="dir-levels label" id="dirLevels"></ol>
+      <ul class="dir-pages" id="dirPages"><li style="--i:0"><a href="#">Projects</a></li><li style="--i:1"><a href="#">Method</a></li><li style="--i:2"><a href="#">Market</a></li><li style="--i:3"><a href="#">About</a></li></ul>
+      <div class="dir-cta"><a class="cta label" href="https://wa.me/971562419511?text=INVEST" target="_blank" rel="noopener">Send “Invest”</a></div>
+      <p class="dir-contact data"><a href="tel:+971562419511">+971 56 241 9511</a><br><a href="mailto:info@realestatebyumer.com">info@realestatebyumer.com</a><br>@umerdubaiinvestments · Dubai, UAE</p>
+    </div>
+  </div>
+</div>
+
+<main id="main"></main>
+
+<footer class="data">
+  <span>Muhammad Umer Riaz · Property Investment Consultant · AX Capital Real Estate · RERA BRN [n]</span>
+  <span>© 2026 Real Estate by Umer</span>
+</footer>
+<div class="debug data" id="debug"></div>
+
+<script>
+/* ───────────────────────── the mark (traced from assets/brand/umer-logo.png; viewBox is the mark's bbox) ─── */
+/* Outlines are 0.75px-tolerance traces of the PNG's alpha. The spire is separated at y=614 so it can be a gauge.
+   `vector-effect: non-scaling-stroke` thickens the hairline letterforms uniformly at small sizes (they are ~20px
+   strokes at 1600px, i.e. 0.5px at nav size without it). */
+const PATHS = {
+  U: "M652 977 L654 977 L654 1227 L653 1227 L653 1237 L652 1237 L652 1242 L651 1242 L649 1251 L648 1251 L645 1259 L643 1260 L643 1262 L633 1272 L631 1272 L630 1274 L628 1274 L628 1275 L626 1275 L624 1277 L617 1278 L617 1279 L612 1279 L612 1280 L595 1279 L595 1278 L591 1278 L589 1276 L584 1275 L583 1273 L578 1271 L569 1262 L569 1260 L567 1259 L567 1257 L566 1257 L566 1255 L565 1255 L565 1253 L563 1251 L563 1248 L562 1248 L562 1245 L561 1245 L561 1242 L560 1242 L560 1237 L559 1237 L559 1229 L558 1229 L558 1072 L589 1042 L589 1229 L590 1229 L590 1233 L591 1233 L592 1238 L598 1244 L600 1244 L600 1245 L612 1245 L612 1244 L616 1243 L619 1240 L619 1238 L621 1237 L622 1231 L623 1231 L623 1006Z",
+  M: "M772 129 L782 129 L782 366 L789 366 L789 601 L791 601 L793 603 L796 603 L799 606 L801 606 L813 618 L814 622 L816 623 L816 625 L817 625 L817 627 L819 629 L820 635 L822 637 L824 651 L825 651 L825 659 L826 659 L826 1280 L795 1280 L795 659 L794 659 L794 656 L793 656 L793 653 L792 653 L792 650 L790 649 L790 647 L788 645 L786 645 L785 643 L782 643 L782 642 L774 642 L774 643 L770 644 L766 648 L766 650 L765 650 L765 652 L763 654 L762 663 L761 663 L761 1280 L730 1280 L730 805 L729 805 L729 800 L728 800 L728 797 L727 797 L727 794 L725 793 L725 791 L722 788 L720 788 L718 786 L714 786 L714 785 L708 786 L708 787 L706 787 L705 789 L702 790 L702 792 L700 793 L699 798 L697 800 L697 806 L696 806 L696 1280 L665 1280 L665 803 L666 803 L667 789 L668 789 L668 785 L669 785 L669 781 L670 781 L670 778 L672 776 L672 773 L673 773 L676 765 L678 764 L678 762 L681 760 L681 758 L687 752 L689 752 L690 750 L692 750 L693 748 L695 748 L695 747 L697 747 L699 745 L708 744 L708 743 L718 743 L718 744 L723 744 L723 745 L730 746 L730 661 L731 661 L731 652 L732 652 L733 642 L734 642 L734 638 L735 638 L735 635 L737 633 L737 630 L738 630 L742 620 L744 619 L744 617 L754 607 L756 607 L757 605 L763 603 L763 601 L764 601 L764 366 L772 366Z",
+  E: "M880 782 L896 782 L896 783 L899 783 L899 784 L903 784 L903 785 L907 786 L908 788 L910 788 L911 790 L913 790 L921 798 L921 800 L925 804 L925 806 L926 806 L926 808 L928 810 L928 813 L930 815 L930 818 L931 818 L931 821 L932 821 L932 825 L933 825 L933 830 L934 830 L935 843 L936 843 L936 929 L905 929 L905 844 L904 844 L904 839 L903 839 L903 836 L902 836 L900 830 L896 826 L891 825 L891 824 L882 825 L882 826 L880 826 L875 831 L874 836 L872 838 L872 843 L871 843 L871 1033 L936 1033 L936 1063 L872 1063 L871 1064 L871 1229 L872 1229 L872 1233 L873 1233 L875 1239 L878 1242 L882 1243 L882 1244 L889 1245 L889 1244 L894 1244 L897 1241 L899 1241 L900 1238 L903 1235 L904 1228 L905 1228 L905 1172 L936 1172 L936 1230 L935 1230 L934 1240 L933 1240 L933 1244 L932 1244 L931 1250 L930 1250 L927 1258 L925 1259 L925 1261 L915 1271 L913 1271 L912 1273 L910 1273 L910 1274 L908 1274 L906 1276 L903 1276 L903 1277 L900 1277 L900 1278 L895 1278 L895 1279 L881 1279 L881 1278 L872 1277 L872 1276 L862 1272 L860 1269 L858 1269 L853 1264 L853 1262 L850 1260 L850 1258 L848 1257 L848 1255 L847 1255 L847 1253 L845 1251 L845 1248 L844 1248 L843 1243 L842 1243 L841 1231 L840 1231 L840 1080 L839 1080 L839 1037 L840 1037 L840 841 L841 841 L841 832 L842 832 L842 827 L843 827 L844 819 L845 819 L847 811 L848 811 L850 805 L852 804 L852 802 L854 801 L854 799 L864 789 L866 789 L867 787 L869 787 L869 786 L871 786 L873 784 L876 784 L876 783 L880 783Z",
+  R: "M991 961 L1005 962 L1005 963 L1014 965 L1017 968 L1021 969 L1032 980 L1033 984 L1035 985 L1035 987 L1037 989 L1037 992 L1039 994 L1039 998 L1040 998 L1040 1002 L1041 1002 L1041 1008 L1042 1008 L1042 1088 L1041 1088 L1040 1098 L1039 1098 L1039 1101 L1037 1103 L1037 1106 L1036 1106 L1035 1110 L1033 1111 L1033 1113 L1031 1114 L1031 1116 L1029 1117 L1029 1119 L1032 1121 L1032 1123 L1034 1124 L1034 1126 L1035 1126 L1035 1128 L1037 1130 L1037 1133 L1038 1133 L1039 1139 L1040 1139 L1040 1143 L1041 1143 L1041 1149 L1042 1149 L1042 1280 L1011 1280 L1011 1151 L1010 1151 L1010 1148 L1009 1148 L1009 1145 L1007 1144 L1007 1142 L1004 1139 L1000 1138 L1000 1137 L988 1137 L988 1138 L986 1138 L980 1144 L979 1149 L978 1149 L978 1153 L977 1153 L977 1280 L947 1280 L947 1007 L948 1007 L948 1001 L949 1001 L949 997 L950 997 L951 991 L952 991 L955 983 L959 979 L959 977 L965 971 L967 971 L969 968 L971 968 L971 967 L973 967 L973 966 L975 966 L977 964 L980 964 L980 963 L991 962Z M992 996 L989 996 L989 997 L985 998 L980 1003 L979 1008 L978 1008 L978 1012 L977 1012 L977 1101 L1011 1101 L1011 1010 L1010 1010 L1010 1007 L1009 1007 L1009 1005 L1008 1005 L1008 1003 L1006 1002 L1005 999 L1003 999 L1002 997 L999 997 L999 996Z",
+  SPIRE: "M772 129 L782 129 L782 366 L789 366 L789 614 L764 614 L764 366 L772 366Z",
+};
+const MARK_VIEWBOX = "550 121 500 1167";                // bbox 558..1042 × 129..1280 with a little air
+function markSVG(id) {
+  return `<svg viewBox="${MARK_VIEWBOX}" role="img" aria-label="UMER mark" focusable="false">
+    <defs>
+      <clipPath id="${id}-letters"><rect x="550" y="614" width="500" height="680"/></clipPath>
+      <clipPath id="${id}-glyphs"><path d="${PATHS.U}"/><path d="${PATHS.M}" clip-rule="evenodd"/><path d="${PATHS.E}"/><path d="${PATHS.R}"/></clipPath>
+    </defs>
+    <g class="m-letters" fill-rule="evenodd">
+      <path d="${PATHS.U}"/><path d="${PATHS.M}" clip-path="url(#${id}-letters)"/><path d="${PATHS.E}"/><path d="${PATHS.R}"/>
+    </g>
+    <path class="m-spire-track" d="${PATHS.SPIRE}"/>
+    <path class="m-spire-fill" d="${PATHS.SPIRE}"/>
+    <rect class="m-glint" x="758" y="121" width="38" height="60" rx="19"/>
+    <g clip-path="url(#${id}-glyphs)"><rect class="m-sweep" x="400" y="100" width="260" height="1200" transform="skewX(-18)"/></g>
+  </svg>`;
+}
+document.getElementById('mark').innerHTML = markSVG('nav');
+document.getElementById('dirMark').insertAdjacentHTML('afterbegin', markSVG('dir'));
+
+/* ───────────────────────── the climb: ten levels (STRUCTURE.md §2) ─── */
+const LEVELS = [
+  { id: 'lvl-00', n: '00', name: 'Ground',        short: 'Ground',     eyebrow: 'Dubai property & investment · Muhammad Umer Riaz, MBA', h: '<span style="white-space:nowrap">The numbers first.</span><br><em style="white-space:nowrap">Then the view.</em>', lead: 'Emaar’s current releases, read the way a banker reads a balance sheet. Sixteen years across finance and real estate. Seventy-plus clients who bought on evidence, not enthusiasm.', h1: true, tall: true },
+  { id: 'lvl-01', n: '01', name: 'Ground truth',  short: 'Truth',      eyebrow: 'Ground truth', h: 'Dubai does not need selling. It needs <em>reading.</em>', lead: 'The market publishes everything. Most people never look. These are the figures I start every conversation with, and I will update them here when they change.' },
+  { id: 'lvl-02', n: '02', name: 'The analyst',   short: 'Analyst',    eyebrow: 'The analyst', h: 'An ex-banker in a market of salesmen.', lead: 'My job is to be the person in the room who has already read the file. Then to tell you, plainly, whether it holds.' },
+  { id: 'lvl-03', n: '03', name: 'The method',    short: 'Method',     eyebrow: 'The method', h: 'Four steps. No step skipped.', lead: 'Read. Model. Select. Hold and exit. You receive the model as a one-page document — the same page I would want if I were the buyer.', paper: true },
+  { id: 'lvl-04', n: '04', name: 'The asset',     short: 'Asset',      eyebrow: 'Featured · Montiva by Vida · Dubai Creek Harbour', h: 'One tower, read <em>floor by floor.</em>', lead: 'One-bedrooms from 765 sq ft; three-bedrooms to 1,835. Handover September 2029. Every face sees something the market prices.', tall: true },
+  { id: 'lvl-05', n: '05', name: 'The masterplan',short: 'Masterplan', eyebrow: 'The masterplan · Dubai Creek Harbour', h: 'Where the numbers point.', lead: 'Dubai is not one market. It is thirty, moving at different speeds. I work in Emaar’s masterplans because the infrastructure is drawn before the towers are sold.', tall: true },
+  { id: 'lvl-06', n: '06', name: 'The ledger',    short: 'Ledger',     eyebrow: 'Current releases · Emaar', h: 'Five communities. Twenty-six lines. <em>One developer.</em>', lead: 'Every line is a current Emaar release I have read in full. The per-square-foot column is mine: it is the number the brochures leave out.' },
+  { id: 'lvl-07', n: '07', name: 'The view',      short: 'View',       eyebrow: 'The view', h: 'This is what the numbers are for.', lead: 'A terrace at seven in the evening, when the city turns the colour of the logo. The lifestyle is real. It is simply the second thing we discuss.' },
+  { id: 'lvl-08', n: '08', name: 'On record',     short: 'Record',     eyebrow: 'On record', h: 'Seventy clients. Sixteen years. One method.', lead: 'Real quotes only, with consent on file. Until three are collected, the numbers stand alone.' },
+  { id: 'lvl-09', n: '09', name: 'Invest',        short: 'Invest',     eyebrow: 'Begin', h: 'Send <em>one word.</em>', lead: 'Message INVEST on WhatsApp and I will reply personally, usually within the hour during Dubai business hours. The first twenty minutes are for me to listen.' },
+];
+const main = document.getElementById('main');
+main.innerHTML = LEVELS.map(l => `
+  <section id="${l.id}" data-level="${l.n}" data-name="${l.name}" class="${l.paper ? 'paper ' : ''}${l.tall ? 'tall' : ''}" aria-labelledby="${l.id}-h">
+    <div class="marker data" aria-hidden="true">LVL ${l.n} · ${l.name}</div>
+    <div class="body">
+      <p class="eyebrow label">${l.eyebrow}</p>
+      ${l.h1 ? `<h1 id="${l.id}-h">${l.h}</h1>` : `<h2 id="${l.id}-h">${l.h}</h2>`}
+      <p class="lead">${l.lead}</p>
+      <p class="stamp data"><span class="dot"></span>Prices indicative · starting from · correct as at 06 Sep 2026 · updated daily by Umer</p>
+    </div>
+  </section>`).join('');
+
+const ledge = document.getElementById('ledge');
+ledge.innerHTML = LEVELS.map((l, i) => `<li><a href="#${l.id}" data-i="${i}"><span class="num">${l.n}</span><span class="nm">${l.name}</span></a></li>`).join('');
+const notchesEl = document.getElementById('notches');
+notchesEl.innerHTML = LEVELS.map((l, i) => `<span class="notch" data-i="${i}"></span><a class="notch-link" href="#${l.id}" data-i="${i}" aria-label="Level ${l.n} — ${l.name}"><span class="data">${l.n} · ${l.name}</span></a>`).join('');
+document.getElementById('dirLevels').innerHTML = LEVELS.map((l, i) => `<li style="--i:${i}"><a href="#${l.id}" data-i="${i}"><span class="n data">${l.n}</span><span>${l.name}</span><span class="dot"></span></a></li>`).join('');
+
+/* ───────────────────────── geometry of the rail: notches sit under the ledge labels ─── */
+const rail = document.getElementById('rail'), dot = document.getElementById('railDot');
+let notchX = [];
+function layoutRail() {
+  const rr = rail.getBoundingClientRect();
+  notchX = [...ledge.querySelectorAll('li')].map(li => { const r = li.getBoundingClientRect(); return (r.left + r.width / 2) - rr.left; });
+  notchesEl.querySelectorAll('.notch').forEach((n, i) => n.style.left = notchX[i] + 'px');
+  notchesEl.querySelectorAll('.notch-link').forEach((n, i) => n.style.left = notchX[i] + 'px');
+  if (current >= 0) dot.style.left = notchX[current] + 'px';
+}
+
+/* ───────────────────────── scroll → state ─── */
+const nav = document.getElementById('nav');
+const sections = [...main.querySelectorAll('section')];
+const digits = document.getElementById('digits'), lvlSr = document.getElementById('lvlSr');
+const nameA = document.getElementById('nameA'), nameB = document.getElementById('nameB');
+const mark = document.getElementById('mark');
+const debug = document.getElementById('debug');
+let current = -1, nameToggle = false, swept = false, glinted = false, queued = false;
+const BAR = 64;
+
+function setLevel(i) {
+  if (i === current) return;
+  current = i;
+  const l = LEVELS[i];
+  // altimeter digit
+  digits.style.transform = `translateY(-${i}em)`;
+  lvlSr.textContent = l.n;
+  // name crossfade (two stacked spans, never re-typed while visible)
+  const incoming = nameToggle ? nameA : nameB, outgoing = nameToggle ? nameB : nameA;
+  incoming.textContent = l.name; incoming.removeAttribute('aria-hidden'); outgoing.setAttribute('aria-hidden', 'true');
+  nameToggle = !nameToggle;
+  // rail dot + current markers
+  if (notchX.length) dot.style.left = notchX[i] + 'px';
+  document.querySelectorAll('.ledge a, .dir-levels a').forEach(a => a.getAttribute('data-i') == i ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current'));
+  // material-aware chrome over the paper band
+  document.documentElement.dataset.material = l.paper ? 'paper' : 'night';
+  // the earned sweep: once, on reaching the Spire levels
+  if (i >= 7 && !swept) { swept = true; mark.classList.add('sweep'); setTimeout(() => mark.classList.remove('sweep'), 1000); }
+}
+let forced = null;                                   // ?force=<level> review mode: hold the ascending state at a level without scrolling
+function update() {
+  if (forced !== null) { nav.dataset.state = 'ascending'; document.documentElement.style.setProperty('--p', (forced / 9).toFixed(3)); setLevel(forced); if (debug.classList.contains('on')) { const r = menuBtn.getBoundingClientRect(); debug.textContent = `forced · lvl ${LEVELS[forced].n} · material ${document.documentElement.dataset.material} · vw ${innerWidth} · menu ${getComputedStyle(menuBtn).display} x${Math.round(r.x)} w${Math.round(r.width)} · bar ${getComputedStyle(document.querySelector('.bar')).gridTemplateColumns}`; } return; }
+  const y = scrollY, max = document.documentElement.scrollHeight - innerHeight;
+  const p = max > 0 ? Math.min(1, Math.max(0, y / max)) : 0;
+  nav.dataset.state = y > 80 ? 'ascending' : 'ground';
+  document.documentElement.style.setProperty('--p', p.toFixed(4));
+  let lvl = 0; for (let i = 0; i < sections.length; i++) if (sections[i].offsetTop <= y + BAR + 1) lvl = i;
+  setLevel(lvl);
+  if (p > 0.985 && !glinted) { glinted = true; mark.classList.add('glint'); setTimeout(() => mark.classList.remove('glint'), 1300); }
+  if (debug.classList.contains('on')) debug.textContent = `state ${nav.dataset.state} · lvl ${LEVELS[lvl].n} · p ${p.toFixed(3)} · material ${document.documentElement.dataset.material}`;
+}
+addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; update(); }); } }, { passive: true });
+addEventListener('resize', () => { layoutRail(); update(); });
+addEventListener('load', () => { layoutRail(); update(); });
+
+/* ───────────────────────── the directory (mobile panel): dialog with focus trap ─── */
+const menuBtn = document.getElementById('menuBtn'), directory = document.getElementById('directory');
+let lastFocus = null;
+function openDirectory() {
+  lastFocus = document.activeElement;
+  directory.hidden = false; directory.classList.remove('closing');
+  requestAnimationFrame(() => requestAnimationFrame(() => directory.classList.add('open')));
+  menuBtn.setAttribute('aria-expanded', 'true'); menuBtn.setAttribute('aria-label', 'Close the directory');
+  document.body.classList.add('locked');
+  setTimeout(() => (directory.querySelector('a[aria-current="true"]') || directory.querySelector('a')).focus({ preventScroll: true }), 200);
+}
+function closeDirectory() {
+  directory.classList.remove('open'); directory.classList.add('closing');
+  menuBtn.setAttribute('aria-expanded', 'false'); menuBtn.setAttribute('aria-label', 'Open the directory');
+  document.body.classList.remove('locked');
+  const done = () => { directory.hidden = true; directory.classList.remove('closing'); directory.removeEventListener('transitionend', done); };
+  directory.addEventListener('transitionend', done); setTimeout(done, 400);
+  (lastFocus || menuBtn).focus({ preventScroll: true });
+}
+menuBtn.addEventListener('click', () => directory.hidden ? openDirectory() : closeDirectory());
+directory.addEventListener('click', e => { if (e.target.closest('a[href^="#"]')) closeDirectory(); });
+addEventListener('keydown', e => {
+  if (directory.hidden) return;
+  if (e.key === 'Escape') { e.preventDefault(); closeDirectory(); }
+  if (e.key === 'Tab') {                                     // focus trap
+    const f = [...directory.querySelectorAll('a[href], button')].filter(el => el.offsetParent !== null);
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    else if (!directory.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+  }
+});
+addEventListener('resize', () => { if (innerWidth >= 1024 && !directory.hidden) closeDirectory(); });
+
+/* ───────────────────────── review params ─── */
+const q = new URLSearchParams(location.search);
+if (q.get('debug') === '1') debug.classList.add('on');
+if (q.has('force')) forced = Math.max(0, Math.min(9, parseInt(q.get('force'), 10) || 0));
+addEventListener('load', () => {
+  if (q.has('scroll')) { document.documentElement.style.scrollBehavior = 'auto'; scrollTo(0, parseInt(q.get('scroll'), 10) || 0); setTimeout(() => { document.documentElement.style.scrollBehavior = ''; layoutRail(); update(); }, 50); }
+  if (q.get('menu') === '1') { openDirectory(); directory.classList.add('open'); }
+});
+layoutRail(); update();
+</script>
+</body>
+</html>
