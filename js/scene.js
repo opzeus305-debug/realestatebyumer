@@ -72,7 +72,29 @@ const FOG = col(0x2A2C45);
 scene.fog = new THREE.FogExp2(FOG.getHex(), 0.0125);
 
 /* ───────────────────────── GROUND ───────────────────────── */
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshStandardMaterial({ color: col(0x0C0D15), roughness: 0.58, metalness: 0.22, envMapIntensity: 0.9 }));
+/* The real tower stands on Burj Lake, so the base is water: near-black, almost
+   mirror-smooth so it takes the dusk sky, with a slow ripple in the normal. */
+function rippleTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#8080ff'; g.fillRect(0, 0, 256, 256);           // flat normal
+  for (let i = 0; i < 340; i++) {
+    const x = Math.random() * 256, y = Math.random() * 256, r = 6 + Math.random() * 26;
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    const a = 0.05 + Math.random() * 0.07;
+    gr.addColorStop(0, `rgba(150,150,255,${a})`);
+    gr.addColorStop(1, 'rgba(128,128,255,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.fill();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(26, 26);
+  return t;
+}
+const waterNormal = rippleTex();
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshStandardMaterial({
+  color: col(0x05060C), roughness: 0.10, metalness: 0.86, envMapIntensity: 1.85,
+  normalMap: waterNormal, normalScale: new THREE.Vector2(0.16, 0.16),
+}));
 ground.rotation.x = -Math.PI / 2; ground.position.y = -0.002; scene.add(ground);
 
 /* ───────────────────────── CITY — Downtown massing in three depth rings ───────────────────────── */
@@ -152,8 +174,8 @@ function hazePlane(z, h, alpha) { const m = new THREE.Mesh(new THREE.PlaneGeomet
 const hazeNear = hazePlane(-40, 3.0, 0.22), hazeFar = hazePlane(-95, 8, 0.42);
 const glowTex = gradTex(256, 256, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, 'rgba(226,176,120,0.85)'); gr.addColorStop(0.4, 'rgba(226,176,120,0.28)'); gr.addColorStop(1, 'rgba(226,176,120,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
 const cityGlow = new THREE.Mesh(new THREE.PlaneGeometry(160, 60), new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.5, fog: false }));
-cityGlow.rotation.x = -Math.PI / 2; cityGlow.position.set(0, 0.02, -34); scene.add(cityGlow);
-const basePool = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.55, color: col(0xF0D9B0), fog: false }));
+cityGlow.rotation.x = -Math.PI / 2; cityGlow.position.set(0, 0.02, -46); cityGlow.material.opacity = 0.34; scene.add(cityGlow);
+const basePool = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 5.4), new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.30, color: col(0xC9B48E), fog: false }));
 basePool.rotation.x = -Math.PI / 2; basePool.position.set(0, 0.01, 0); scene.add(basePool);
 
 /* ───────────────────────── LIGHTS — the rig ───────────────────────── */
@@ -161,11 +183,13 @@ scene.add(new THREE.HemisphereLight(0x2E3560, 0x0B0C13, 0.75));
 const rim = new THREE.DirectionalLight(0x6E7BB0, 0.55); rim.position.set(6, 9, -8); scene.add(rim);
 function flood(x, z) { const s = new THREE.SpotLight(0xF2DCB8, 60, 34, 0.30, 0.75, 1.3); s.position.set(x, 0.15, z); s.target.position.set(0, 3.2, 0); scene.add(s, s.target); return s; }
 const floodL = flood(-3.6, 3.2), floodR = flood(3.4, 2.6);
+// the crown: the real tower's spire carries a light of its own
+const crown = new THREE.PointLight(0xF6E2C2, 4.2, 5.5, 2.2); crown.position.set(0, H * 0.90, 0); scene.add(crown);
 const cursorLight = new THREE.PointLight(0xF4EADD, 26, 30, 1.6); cursorLight.position.set(5, 4, 6); scene.add(cursorLight);
 
 /* ───────────────────────── TOWER ───────────────────────── */
-const facade = new THREE.MeshPhysicalMaterial({ color: col(0x181A24), metalness: 0.55, roughness: 0.36, envMapIntensity: 1.25, clearcoat: 0.35, clearcoatRoughness: 0.3 });
-const glazing = new THREE.MeshPhysicalMaterial({ color: col(0x0E1622), metalness: 0.7, roughness: 0.14, envMapIntensity: 1.6, emissive: col(0x6A8AB8), emissiveIntensity: 0.35, clearcoat: 1, clearcoatRoughness: 0.06 });
+const facade = new THREE.MeshPhysicalMaterial({ color: col(0x1E1D23), metalness: 0.42, roughness: 0.30, envMapIntensity: 1.05, clearcoat: 0.5, clearcoatRoughness: 0.24, sheen: 0.4, sheenColor: col(0xE6C79A), sheenRoughness: 0.5 });
+const glazing = new THREE.MeshPhysicalMaterial({ color: col(0x120F14), metalness: 0.62, roughness: 0.10, envMapIntensity: 1.35, emissive: col(0xE8C398), emissiveIntensity: 0.55, clearcoat: 1, clearcoatRoughness: 0.05 });
 /* restrained lit floor bands — the champagne arrives as light (production's technique, dimmer and warmer) */
 (function litFloors(mat, freq, strength) {
   mat.onBeforeCompile = (sh) => {
@@ -175,7 +199,7 @@ const glazing = new THREE.MeshPhysicalMaterial({ color: col(0x0E1622), metalness
       `#include <emissivemap_fragment>\n float b = fract(vWP.y * uFreq); float lit = smoothstep(0.62, 0.70, b) * (1.0 - smoothstep(0.80, 0.90, b));\n float hh = clamp(vWP.y / ${H.toFixed(2)}, 0.0, 1.0); lit *= mix(1.0, 0.35, smoothstep(0.55, 1.0, hh));\n totalEmissiveRadiance += uBand * lit * uStrength;`);
   };
   mat.needsUpdate = true;
-})(facade, 7.0, 0.38);
+})(facade, 9.0, 0.62);
 
 const tower = new THREE.Group(); scene.add(tower);
 let towerLights = null, towerReady = false;
@@ -244,7 +268,43 @@ async function bringTheTower() {
   fitTower(root); tower.add(root);
   const rebord = []; root.traverse(o => { if (o.isMesh && o.material === facade) rebord.push(o); });
   towerLights = sampleFacadeLights(rebord, tier === 'C' ? 900 : 3000);
-  towerReady = true; hint.textContent = 'Drag to look around'; needsRender = true;
+
+  /* The reflection. A flipped copy under the waterline, dark and translucent,
+     fading with depth so it dissolves rather than ending. */
+  if (tier !== 'C') {
+    const reflMat = new THREE.MeshBasicMaterial({
+      color: col(0x2A2A33), transparent: true, opacity: 0.30,
+      depthWrite: false, fog: true,
+    });
+    const refl = root.clone(true);
+    refl.traverse(o => { if (o.isMesh) o.material = reflMat; });
+    const mirror = new THREE.Group();
+    mirror.scale.set(1, -1, 1); mirror.position.y = -0.004;
+    mirror.add(refl);
+    tower.add(mirror);
+
+    // the reflected window lights, dimmer still
+    if (towerLights) {
+      const lr = towerLights.clone(true);
+      lr.material = towerLights.material.clone();
+      lr.material.opacity = (lr.material.opacity ?? 1) * 0.34;
+      lr.material.transparent = true;
+      mirror.add(lr);
+    }
+
+    // a haze sheet lying on the water kills the reflection with distance
+    const fadeTex = gradTex(8, 128, (g, w, h) => {
+      const gr = g.createLinearGradient(0, 0, 0, h);
+      gr.addColorStop(0, 'rgba(8,9,16,0)'); gr.addColorStop(0.55, 'rgba(8,9,16,0.55)'); gr.addColorStop(1, 'rgba(8,9,16,0.92)');
+      g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    });
+    const veil = new THREE.Mesh(new THREE.PlaneGeometry(60, 30), new THREE.MeshBasicMaterial({
+      map: fadeTex, transparent: true, depthWrite: false, fog: false, opacity: 0.95,
+    }));
+    veil.rotation.x = Math.PI / 2; veil.position.set(0, -0.006, -14); scene.add(veil);
+  }
+
+  towerReady = true; hint.textContent = 'Drag · scroll to zoom'; needsRender = true;
 }
 bringTheTower();
 
@@ -298,6 +358,7 @@ addEventListener('resize', layout);
 /* ───────────────────────── THE RIG — springs, momentum, a camera in a place ───────────────────────── */
 class Spring { constructor(x, k, zeta = 1) { this.x = x; this.v = 0; this.t = x; this.k = k; this.c = 2 * Math.sqrt(k) * zeta; }   // zeta ≥ 1: never overshoots
   step(dt) { const a = -this.k * (this.x - this.t) - this.c * this.v; this.v += a * dt; this.x += this.v * dt; return this.x; } }
+let zoom = 1, zoomT = 1;
 const rig = {
   yaw: -0.42, yawVel: 0,                                       // free angle with momentum and friction
   pitch: new Spring(-0.075, 26), dist: new Spring(11.6, 12), look: new Spring(2.55, 12),
@@ -317,9 +378,53 @@ canvas.addEventListener('pointermove', e => {
   needsRender = true;
 });
 const endDrag = () => { dragging = false; lastInput = performance.now(); };
+
+/* Zoom: the wheel dollies the camera rather than scrolling the page while the
+   pointer is over the object. Clamped so the tower can never be lost. */
+canvas.addEventListener('wheel', (e) => {
+  if (!motion) return;
+  e.preventDefault();
+  zoomT = THREE.MathUtils.clamp(zoomT + e.deltaY * 0.00075, 0.52, 1.45);
+  lastInput = performance.now(); needsRender = true;
+}, { passive: false });
+
+/* Double-click returns the camera home. */
+canvas.addEventListener('dblclick', () => {
+  zoomT = 1; rig.yaw = -0.42; rig.yawVel = 0; rig.pitch.t = -0.075;
+  lastInput = performance.now(); needsRender = true;
+});
+
+/* Three viewpoints, named for what they show. Keyboard 1/2/3 as well. */
+const VIEWS = {
+  base:  { yaw: -0.42, pitch:  0.06, zoom: 0.62 },
+  full:  { yaw: -0.42, pitch: -0.075, zoom: 1.00 },
+  crown: { yaw:  0.55, pitch: -0.20, zoom: 0.70 },
+};
+function goTo(name) {
+  const v = VIEWS[name]; if (!v) return;
+  rig.yaw = v.yaw; rig.yawVel = 0; rig.pitch.t = v.pitch; zoomT = v.zoom;
+  lastInput = performance.now(); needsRender = true;
+  document.querySelectorAll('.viewbtn').forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset.view === name)));
+}
+(function buildViewControls() {
+  const host = document.querySelector('.hero');
+  if (!host || !motion) return;
+  const bar = document.createElement('div');
+  bar.className = 'views';
+  bar.innerHTML =
+    '<button class="viewbtn" type="button" data-view="base">Base</button>' +
+    '<button class="viewbtn" type="button" data-view="full" aria-pressed="true">Full height</button>' +
+    '<button class="viewbtn" type="button" data-view="crown">Crown</button>';
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('.viewbtn'); if (b) goTo(b.dataset.view);
+  });
+  host.appendChild(bar);
+})();
 canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag); canvas.addEventListener('pointerleave', () => { ptrX = 0; ptrY = 0; });
 addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft') { rig.yawVel -= 0.9; lastInput = performance.now(); } if (e.key === 'ArrowRight') { rig.yawVel += 0.9; lastInput = performance.now(); }
+  if (e.key === '1') goTo('base'); if (e.key === '2') goTo('full'); if (e.key === '3') goTo('crown');
   if (e.key === 'ArrowUp') rig.pitch.t = Math.max(-0.16, rig.pitch.t - 0.05); if (e.key === 'ArrowDown') rig.pitch.t = Math.min(0.30, rig.pitch.t + 0.05);
   if (e.key === ' ') { motion = !motion; e.preventDefault(); } needsRender = true;
 });
@@ -341,11 +446,18 @@ function frame() {
 
   // yaw: momentum with friction; after 5 s idle a slow drift so the city keeps breathing (off under reduced motion)
   if (!dragging) { const idle = motion && performance.now() - lastInput > 5000; rig.yawVel += ((idle ? 0.022 : 0) - rig.yawVel) * (1 - Math.exp(-dt / (idle ? 2.5 : 0.55))); }
+  zoom += (zoomT - zoom) * (1 - Math.exp(-dt / 0.22));
   rig.yaw += rig.yawVel * dt;
+
+  // the lake breathes: two slow drifts across the normal map
+  if (motion) {
+    waterNormal.offset.x = (t * 0.0045) % 1;
+    waterNormal.offset.y = (t * 0.0031) % 1;
+  }
 
   // the crane: scroll rises, orbits and dollies through a heavy spring
   rig.scroll.t = scrollN; const s = rig.scroll.step(dt);
-  rig.dist.t = 11.6 + s * 4.6; rig.look.t = 2.55 + s * 1.3; rig.lookX.t = 2.3 - s * 1.2;
+  rig.dist.t = (11.6 + s * 4.6) * zoom; rig.look.t = 2.55 + s * 1.3; rig.lookX.t = 2.3 - s * 1.2;
   rig.panX.t = motion ? ptrX * 0.45 : 0; rig.panY.t = motion ? -ptrY * 0.28 : 0;
   const dist = rig.dist.step(dt), lookY = rig.look.step(dt), lookX = rig.lookX.step(dt), pitch = rig.pitch.step(dt) + s * 0.16, panX = rig.panX.step(dt), panY = rig.panY.step(dt);
   const yaw = rig.yaw + s * 0.42;

@@ -592,3 +592,25 @@ html, body { max-width: 100%; overflow-x: clip; }
   border-top: 1px solid var(--hairline); padding-top: var(--s-4);
 }
 .gt__note b { color: var(--accent-strong); font-weight: 400; }
+
+/* ─── HERO VIEWPOINT CONTROLS ───────────────────────────────────────── */
+.views {
+  position: absolute; right: var(--margin-x); bottom: calc(var(--s-11) + var(--s-4));
+  z-index: 3; display: flex; gap: var(--s-5); align-items: center;
+}
+.viewbtn {
+  background: none; border: 0; cursor: pointer; padding: var(--s-2) 0;
+  font-family: var(--font-data); font-size: var(--t-2xs); letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--fg-subtle); position: relative;
+  transition: color var(--d-fast) var(--ease-silk);
+}
+.viewbtn::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: var(--accent); transform: scaleX(0); transform-origin: left;
+  transition: transform var(--d-base) var(--ease-out-expo);
+}
+.viewbtn:hover { color: var(--fg); }
+.viewbtn[aria-pressed="true"] { color: var(--accent-strong); }
+.viewbtn[aria-pressed="true"]::after,
+.viewbtn:hover::after { transform: scaleX(1); }
+@media (max-width: 1023px) { .views { display: none; } }

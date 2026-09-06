@@ -51,7 +51,7 @@ change frequently — see [`_research/INVENTORY.md`](_research/INVENTORY.md).
 - Logo: the client's own
 - Portraits: the client's own
 - `assets/lens/`: photographs taken by Umer
-- `assets/emaar/`: official Emaar developer renders (Marèva at The Oasis)
+- `assets/emaar/`: official developer renders (Marèva at The Oasis)
 - `assets/stock/`, `assets/img/`: Unsplash — free for commercial use — **placeholders**,
   to be replaced with the client's own photography
 - `assets/burj.glb`: free Burj Khalifa model via Sketchfab
@@ -62,3 +62,4 @@ change frequently — see [`_research/INVENTORY.md`](_research/INVENTORY.md).
 - Integrate the elevation-rail nav and full logo motion system from `prototype/`
 - Replace remaining stock photography
 - Confirm the seven disputed price figures with the client
+- Replace `assets/lens/` with versions free of the "rawr." sticker
