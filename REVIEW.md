@@ -140,11 +140,11 @@ Performance: the GLB is the whole budget. The background adds ~10 draws, three 2
 
 ---
 
-## E. Addendum — the tower's realism and the shimmer (`prototype/tower-v2.html`)
+## D. Addendum — the tower's realism and the shimmer (`prototype/tower-v2.html`)
 
 Written after the client's "make the model look realistic / it looks twitchy / the background looks like a Roblox game" and the production changes that followed (city removed, Burj Lake added, materials warmed, near plane 2.2, wheel-dolly and viewpoints).
 
-### E.1 Why it looked like a game, and why it twitched
+### D.1 Why it looked like a game, and why it twitched
 - **The city was the game.** Instanced low-poly boxes at 2–3 px with dot windows are, literally, how game engines draw distant cities. Removing them was right. What is left (sky dome + fog + tower + water) is the correct minimal set; realism now has to come from the tower's shading and from the lake reading as water.
 - **The tower looked like a dark crystal because the metal was tinted dark.** A metal has no colour of its own — it shows what it reflects. `#1E1D23` at metalness 0.42 reflects almost nothing, so the facade read as black plastic with blue edges. Real Burj cladding is aluminium and stainless steel: neutral, light, and at blue hour it is a *silver gradient* — cool where it faces the sky, warm where the floods and the horizon reach it.
 - **The twitch has three causes, in order of contribution.**
@@ -154,7 +154,7 @@ Written after the client's "make the model look realistic / it looks twitchy / t
   Contributing: hard-edged `fract()` floor bands on sub-pixel geometry, and bloom turning single-pixel fireflies into popping blobs.
 - **A consequence for realism:** because the glass is the visible skin, the tower's look is decided by the glass material, not by Rebord. Realistic glass at blue hour is near-black, reflects the sky by Fresnel, and shows *sparse* lit windows (≈20 % low down, ≈10 % at the crown) — a dense 50 % mosaic reads as noise at 3 px per storey. The silver mullions then read as fine texture between the panes, which is exactly what the real facade does.
 
-### E.2 What `tower-v2.html` does about it (port list, in order)
+### D.2 What `tower-v2.html` does about it (port list, in order)
 1. **Materials.** Rebord: `#A9AEB8`, metalness 0.88, roughness 0.40, environment = the sky PMREM. Vitres: dielectric glass `#0A0E15`, metalness 0, ior 1.52, roughness 0.05, `polygonOffset` factor 1 / units 2 (glass sits behind the mullions — kills the z-fight). A flipped reflection copy uses a rougher grey metal.
 2. **Geometric specular anti-aliasing** in `roughnessmap_fragment`: `roughness = sqrt(r² + min(0.22, 3·variance))` where variance is from `dFdx/dFdy(vNormal)`; plus a roughness floor (0.30 metal, 0.04 glass) and `+0.14·smoothstep(9, 40, distance)` so far parts stop sparkling.
 3. **Windows per storey and per bay** on the glass (`emissivemap_fragment`, world-space hash: 38 storeys per unit, 14 bays per radian; lit probability 0.24 falling to 0.10 at the crown; two colour temperatures; intensity 0.42), **anti-aliased with `fwidth()`** and blending to their average glow once a storey falls under ~4 px. The floor bands remain at 0.22 as an accent, also `fwidth`-faded. The lake reflection is the tower's own lit glass mirrored (the floods cannot reach below the water), skipped on tier C.
@@ -164,11 +164,11 @@ Written after the client's "make the model look realistic / it looks twitchy / t
 7. **Post**: firefly clamp `min(c, 3.0)` before the bright pass; bloom threshold 0.85–1.6, strength 0.32; DoF as before; **temporal accumulation** (`k = clamp(0.62 − 0.9·cameraSpeed, 0, 0.62)`) — strong when the camera is nearly still, released on movement so there is no ghosting. Reduced motion: no drift, still water, static beacon, render on demand.
 8. **Water**: a *lake with an edge* — podium island (r 2.0), lake to r 5.6, promenade ring with 150 warm lamps, dark land beyond into the haze. Water is a dielectric (ior 1.33, roughness 0.06, opacity 0.74) so reflection follows Fresnel; the ripple is two long-wavelength sine fields at `normalScale 0.05` drifting at 0.006/s. `?base=plaza` shows the no-mirror alternative.
 
-### E.3 Verdict on the water base
+### D.3 Verdict on the water base
 Keep the lake — it is the iconic Burj image and the reflection doubles the tower's presence in the frame — but only as a lake with a shore. An infinite black mirror is what made it read as a render. If the client still objects, the plaza variant is calmer and more honest at street level; it loses the reflection, which is most of the drama.
 
-### E.4 Settings that must travel together
+### D.4 Settings that must travel together
 DPR ≥ 1.25 with MSAA 4 on tier A (2 on B); SAA on; glass polygonOffset on; TAA on. Turning any one of them off brings some of the sparkle back — the prototype's `?saa=0 ?taa=0 ?offset=0` flags exist so the engineer can see which.
 
-## D. What to protect
+## E. What to protect
 Fraunces/Jost/DM Mono and the 16px floor as implemented; the line-split headline reveal; the count-up that locks; the paper band; the copy voice throughout; the dark Rebord facade with champagne as light; the decision to load the GLB off the critical path.
