@@ -23,11 +23,11 @@ if (!mount) throw new Error('no #scene mount');
 const canvas = document.createElement('canvas');
 canvas.setAttribute('aria-hidden', 'true');
 mount.appendChild(canvas);
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: 'high-performance', stencil: false, preserveDrawingBuffer: STILL });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance', stencil: false, preserveDrawingBuffer: STILL });
 renderer.toneMapping = THREE.NoToneMapping;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 600);
+const camera = new THREE.PerspectiveCamera(36, 1, 2.2, 700);
 const H = 6.15;                                             // tower height in scene units (≈135 m per unit)
 
 /* ───────────────────────── SKY — a blue-hour dome, physically ordered, no stars ───────────────────────── */
@@ -144,9 +144,8 @@ function cityRing(count, rMin, rMax, hMin, hMax, density) {
   scene.add(mesh); return mesh;
 }
 const rings = [
-  // Only a distant silhouette band remains: enough to give the tower scale and
-  // a horizon that belongs somewhere, without a city competing with the type.
-  cityRing(90, 62, 150, 0.18, 1.5, 0.04),
+  // No procedural buildings. Blocky low-poly massing reads as a game engine,
+  // not a place. The tower, the water and an ordered dusk sky carry the frame.
 ];
 
 /* window lights — additive points with fog attenuation and a slow breathe (light may breathe; nothing else loops) */
@@ -165,7 +164,7 @@ function makeLights(pos, cols, seeds, size, tint) {
   const m = new THREE.ShaderMaterial({ ...lightShader, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { uTime: { value: 0 }, uSize: { value: size }, uFogD: { value: 0.0125 }, uTint: { value: tint } } });
   const pts = new THREE.Points(g, m); pts.frustumCulled = false; scene.add(pts); return pts;
 }
-const cityLights = makeLights(lightPos, lightCol, lightSeed, 46, col(0xFFFFFF, 1.15));
+const cityLights = lightPos.length ? makeLights(lightPos, lightCol, lightSeed, 46, col(0xFFFFFF, 1.15)) : null;
 
 /* ground haze at two depths, and the city glow pool — the "air" */
 function gradTex(w, h, paint) { const c = document.createElement('canvas'); c.width = w; c.height = h; paint(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }
@@ -367,6 +366,21 @@ const rig = {
   lookX: new Spring(2.3, 10),                                  // the tower sits right of the copy
 };
 let dragging = false, lastX = 0, lastY = 0, lastInput = -1e9, ptrX = 0, ptrY = 0;
+
+/* The canvas is fixed, so past the hero there is nothing to draw and nothing
+   that should be seen. Hide it and let the GPU go quiet. */
+let heroOnScreen = true, tabVisible = !document.hidden;
+document.addEventListener('visibilitychange', () => { tabVisible = !document.hidden; if (tabVisible) needsRender = true; });
+{
+  const heroEl2 = document.querySelector('.hero');
+  if (heroEl2 && 'IntersectionObserver' in window) {
+    new IntersectionObserver((en) => {
+      heroOnScreen = en[0].isIntersecting;
+      canvas.style.visibility = heroOnScreen ? '' : 'hidden';
+      if (heroOnScreen) needsRender = true;
+    }, { rootMargin: '15% 0px' }).observe(heroEl2);
+  }
+}
 const heroEl = document.querySelector('.hero');
 const copyEl = document.querySelector('.hero__copy');
 canvas.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId); lastInput = performance.now(); });
@@ -472,11 +486,12 @@ function frame() {
 
   // the champagne lamp follows the pointer around the tower
   const az = yaw + ptrX * 1.4; cursorLight.position.set(Math.sin(az) * 5.2, 3.6 - ptrY * 2.0, Math.cos(az) * 5.2);
-  cityLights.material.uniforms.uTime.value = t; if (towerLights) towerLights.material.uniforms.uTime.value = t;
+  if (cityLights) cityLights.material.uniforms.uTime.value = t;
+  if (towerLights) towerLights.material.uniforms.uTime.value = t;
   copyEl.style.opacity = String(1 - Math.min(1, Math.max(0, (s - 0.12) / 0.3)));
 
   const moving = dragging || Math.abs(rig.yawVel) > 1e-3 || Math.abs(rig.scroll.x - rig.scroll.t) > 1e-3 || Math.abs(rig.panX.x - rig.panX.t) > 1e-3 || Math.abs(rig.pitch.x - rig.pitch.t) > 1e-3;
-  if (needsRender || moving || motion || STILL) {
+  if ((heroOnScreen && tabVisible) && (needsRender || moving || motion || STILL)) {
     renderer.setRenderTarget(rtScene); renderer.render(scene, camera);
     if (compMat.uniforms.uDof.value > 0) { scene.overrideMaterial = depthMat; const fogWas = scene.fog; scene.fog = null; renderer.setRenderTarget(rtDepth); renderer.render(scene, camera); scene.overrideMaterial = null; scene.fog = fogWas;
       copyMat.uniforms.tDiffuse.value = rtScene.texture; pass(copyMat, rtBlurA); blur(rtBlurA, rtBlurB, 1.8); blur(rtBlurA, rtBlurB, 1.8); }

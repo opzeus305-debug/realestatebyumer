@@ -6,6 +6,13 @@
 #scene { position: fixed; inset: 0; z-index: var(--z-canvas); pointer-events: none; }
 #scene canvas { width: 100%; height: 100%; display: block; }
 .page { position: relative; z-index: var(--z-content); }
+/* The hero canvas is position:fixed. Everything after the hero must be opaque
+   or the tower shows through the whole document. */
+.page > section:not(.hero) { background: var(--bg); }
+.page > section.method { background: var(--paper-1); }
+.page > section.interlude,
+.page > section.view { background: var(--night-0); }
+.footer { background: var(--bg); position: relative; z-index: var(--z-content); }
 
 /* ─── PRELOADER (§5.10) ─────────────────────────────────────────────── */
 #preloader {
@@ -246,24 +253,44 @@
 .method { background: var(--paper-1); color: var(--ink-1); position: relative; overflow: hidden; }
 .method::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
-  background-image: radial-gradient(rgba(10, 11, 18, 0.06) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background:
+    radial-gradient(120% 70% at 12% 0%, rgba(168,131,79,0.10) 0%, rgba(168,131,79,0) 60%),
+    linear-gradient(180deg, rgba(10,11,18,0.05) 0%, rgba(10,11,18,0) 22%);
 }
 .method > * { position: relative; }
 .method h2 { color: var(--ink-1); }
+.steps {
+  grid-column: 2 / span 10; margin-top: 0;
+  display: grid; gap: var(--grid-gap);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.steps > * { min-width: 0; }
+@media (max-width: 767px) { .steps { grid-template-columns: 1fr; } }
+@media (max-width: 1023px) { .steps { grid-column: 1 / -1; } }
+
 .step {
-  display: grid; grid-template-columns: 3rem 1fr; gap: var(--s-4) var(--s-5);
-  padding: var(--s-7) 0; border-top: 1px solid rgba(10, 11, 18, 0.12);
+  padding: var(--s-7) var(--s-6) var(--s-7) 0;
+  border-top: 1px solid rgba(10, 11, 18, 0.14);
   transition: border-color var(--d-fast) var(--ease-silk);
 }
 .step:hover { border-top-color: var(--gilt); }
-.step__n { font-family: var(--font-data); font-size: var(--t-sm); color: var(--gilt); letter-spacing: 0.1em; }
-.step h4 { color: var(--ink-1); margin-bottom: var(--s-3); }
-.step p { color: var(--ink-2); max-width: 62ch; }
-@media (min-width: 1024px) {
-  .step { grid-template-columns: 4rem 15rem 1fr; }
-  .step h4 { margin-bottom: 0; }
+.step__n {
+  display: block; font-family: var(--font-display); font-weight: 300;
+  font-size: clamp(2.5rem, 1.6rem + 2.6vw, 3.75rem); line-height: 1;
+  color: var(--gilt); opacity: 0.55; margin-bottom: var(--s-5);
+  font-variant-numeric: lining-nums tabular-nums;
 }
+.step h4 { color: var(--ink-1); margin-bottom: var(--s-4); }
+.step p { color: var(--ink-2); max-width: 46ch; }
+
+.method__close {
+  grid-column: 2 / span 10; margin-top: var(--s-8);
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  justify-content: space-between; gap: var(--s-5);
+  border-top: 1px solid rgba(10, 11, 18, 0.14); padding-top: var(--s-6);
+}
+@media (max-width: 1023px) { .method__close { grid-column: 1 / -1; } }
+.method__close p { color: var(--ink-2); max-width: 48ch; margin: 0; }
 
 /* ─── LVL 04 · THE ASSET ────────────────────────────────────────────── */
 .asset__media { grid-column: 1 / span 7; }
@@ -386,8 +413,9 @@
 .person__grid {
   display: grid; gap: var(--grid-gap);
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;
+  align-items: stretch;
 }
+.person__grid > * { min-width: 0; }
 .pf { overflow: hidden; background: var(--night-2); position: relative; }
 .pf img {
   width: 100%; height: 100%; object-fit: cover; display: block;
@@ -396,9 +424,8 @@
   transition: transform 900ms var(--ease-out-expo), filter var(--d-slow) var(--ease-silk);
 }
 .pf:hover img { transform: scale(1.04); filter: grayscale(0) contrast(1.06) brightness(1); }
-.pf--tall { aspect-ratio: 3 / 4; grid-row: span 2; }
-.pf--tall img { object-position: 50% 30%; }
-.pf--wide { aspect-ratio: 4 / 5; }
+.pf--tall img { object-position: 50% 26%; }
+.pf { aspect-ratio: 4 / 5; }
 .pf__cap {
   position: absolute; left: 0; right: 0; bottom: 0; padding: var(--s-6) var(--s-4) var(--s-3);
   background: var(--scrim);
