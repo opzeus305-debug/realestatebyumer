@@ -177,6 +177,7 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let motion = !reduced && !STILL;
 let tier = LOCK_TIER || 'A';
 const col = (hex, k = 1) => new THREE.Color(hex).multiplyScalar(k);
+let needsRender = true;                                     // declared first: the async loader may resolve before layout() runs
 
 /* ───────────────────────── renderer / scene ───────────────────────── */
 const canvas = document.getElementById('gl');
@@ -436,7 +437,7 @@ function pass(m, t) { quad.material = m; renderer.setRenderTarget(t); renderer.r
 function blur(src, tmp, r) { blurMat.uniforms.uTexel.value.set(r / src.width, r / src.height); blurMat.uniforms.tDiffuse.value = src.texture; blurMat.uniforms.uDir.value.set(1, 0); pass(blurMat, tmp); blurMat.uniforms.tDiffuse.value = tmp.texture; blurMat.uniforms.uDir.value.set(0, 1); pass(blurMat, src); }
 
 const DPR = () => Math.min(devicePixelRatio || 1, tier === 'A' ? 1.5 : tier === 'B' ? 1.2 : 1);
-let W = 2, Hh = 2, needsRender = true;
+let W = 2, Hh = 2;
 function layout() {
   const dpr = DPR(); W = Math.max(2, Math.floor(innerWidth * dpr)); Hh = Math.max(2, Math.floor(innerHeight * dpr));
   renderer.setPixelRatio(1); renderer.setSize(innerWidth, innerHeight, false); canvas.width = W; canvas.height = Hh; renderer.setViewport(0, 0, W, Hh);
