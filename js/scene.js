@@ -22,15 +22,34 @@ const scene = new THREE.Scene(); const camera = new THREE.PerspectiveCamera(36, 
 
 /* ── sky dome (from hero-v2) — physically ordered dusk, no stars ── */
 const SUN = new THREE.Vector3(-0.72, -0.08, -0.69).normalize();
-const skyMat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, fog: false, uniforms: { cZenith: { value: col(0x0A0D1B) }, cUpper: { value: col(0x141A36) }, cLower: { value: col(0x262C4E) }, cDusk: { value: col(0x4A4360) }, cHorizon: { value: col(0x7E604A) }, cBelow: { value: col(0x0A0B12) }, uSun: { value: SUN } },
-  vertexShader: `varying vec3 vDir; void main(){ vDir = (modelMatrix * vec4(position,1.)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }`,
-  fragmentShader: `uniform vec3 cZenith,cUpper,cLower,cDusk,cHorizon,cBelow,uSun; varying vec3 vDir;
-    void main(){ vec3 d = normalize(vDir); float e = d.y; float warm = pow(0.5 + 0.5*dot(normalize(vec3(d.x,0.,d.z)), normalize(vec3(uSun.x,0.,uSun.z))), 1.6);
-      vec3 c = mix(cLower, cUpper, smoothstep(0.05, 0.32, e)); c = mix(c, cZenith, smoothstep(0.32, 0.85, e));
-      c = mix(mix(cDusk, cDusk*1.15 + cHorizon*0.35, warm), c, smoothstep(0.014, 0.10, e));
-      c = mix(mix(cHorizon*0.45, cHorizon*1.35, warm), c, smoothstep(0.0, 0.022, e)); c = mix(cBelow, c, smoothstep(-0.02, 0.0, e)); gl_FragColor = vec4(c, 1.); }` });
+let skyReady = false;
+/* The sky is a photograph, not a gradient. A real blue-hour frame carries cloud
+   structure and colour transitions no shader ramp reproduces, and because the
+   dome is also the reflection environment, the tower's aluminium mirrors real
+   sky. Equirectangular, seamless at the wrap, 21 KB.
+   Source: assets/stock/dusk-wide.jpg (Unsplash), sky band only, house grade. */
+const skyTex = new THREE.TextureLoader().load('assets/img/sky-dusk.webp', () => { skyReady = true; });
+skyTex.colorSpace = THREE.SRGBColorSpace;
+skyTex.wrapS = THREE.RepeatWrapping;
+skyTex.minFilter = THREE.LinearFilter;
+skyTex.generateMipmaps = false;
+const skyMat = new THREE.MeshBasicMaterial({
+  map: skyTex, side: THREE.BackSide, depthWrite: false, fog: false,
+});
 const sky = new THREE.Mesh(new THREE.SphereGeometry(500, 48, 24), skyMat); sky.renderOrder = -10; scene.add(sky);
-(function () { const s = new THREE.Scene(); s.add(sky.clone()); const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromScene(s, 0.04).texture; pm.dispose(); })();
+/* The dome is the reflection environment, so it must be rebuilt once the sky
+   photograph has decoded — otherwise every metal surface reflects a black sky. */
+function buildEnvironment() {
+  const s = new THREE.Scene();
+  s.add(sky.clone());
+  const pm = new THREE.PMREMGenerator(renderer);
+  const prev = scene.environment;
+  scene.environment = pm.fromScene(s, 0.04).texture;
+  pm.dispose();
+  if (prev && prev.dispose) prev.dispose();
+  needsRender = true;
+}
+buildEnvironment();
 scene.fog = new THREE.FogExp2(col(0x2A2C45).getHex(), 0.012);
 /* a far haze band so land and sky meet in air, not on a line */
 { const c = document.createElement('canvas'); c.width = 4; c.height = 128; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 128); gr.addColorStop(0, 'rgba(58,58,84,0)'); gr.addColorStop(0.55, 'rgba(58,58,84,0.55)'); gr.addColorStop(1, 'rgba(58,58,84,0.9)'); g.fillStyle = gr; g.fillRect(0, 0, 4, 128);
@@ -128,10 +147,47 @@ const tower = new THREE.Group(); scene.add(tower); let towerReady = false; const
   el.className = 'ring'; el.setAttribute('aria-hidden', 'true'); el.textContent = 'Drag';
   document.body.appendChild(el); return el;
 })();
-async function loadGLB(url, onProgress) {
-  const res = await fetch(url); if (!res.ok) throw new Error(res.status); const total = +res.headers.get('content-length') || 0; const reader = res.body.getReader(); const chunks = []; let got = 0;
+/* Transport: the model ships pre-gzipped (18.9 MB -> 4.1 MB) and is inflated in
+   the browser with DecompressionStream, so no host configuration is needed. If
+   the host has already applied Content-Encoding, the bytes arrive as a GLB and
+   we detect that by its magic and skip inflation. Falls back to the plain file
+   on any browser without DecompressionStream. */
+const GLB_MAGIC = 0x46546C67;
+async function fetchModel(onProgress) {
+  const gzUrl = 'assets/burj.opt.glb.gz', rawUrl = 'assets/burj.opt.glb';
+  if (typeof DecompressionStream === 'function') {
+    try {
+      const r = await fetch(gzUrl);
+      if (r.ok) {
+        const total = +r.headers.get('content-length') || 0;
+        let got = 0;
+        const counted = new TransformStream({
+          transform(c, ctl) { got += c.length; onProgress && onProgress(total ? got / total : 0); ctl.enqueue(c); }
+        });
+        const head = await new Response(r.body.pipeThrough(counted)).arrayBuffer();
+        const probe = new DataView(head);
+        if (head.byteLength >= 4 && probe.getUint32(0, true) === GLB_MAGIC) {
+          return new Uint8Array(head);                    // host already inflated it
+        }
+        const inflated = await new Response(
+          new Blob([head]).stream().pipeThrough(new DecompressionStream('gzip'))
+        ).arrayBuffer();
+        onProgress && onProgress(1);
+        return new Uint8Array(inflated);
+      }
+    } catch (e) { console.warn('[scene] gzip transport unavailable, using the plain model', e); }
+  }
+  const res = await fetch(rawUrl);
+  if (!res.ok) throw new Error(res.status);
+  const total = +res.headers.get('content-length') || 0;
+  const reader = res.body.getReader(); const chunks = []; let got = 0;
   for (;;) { const { done, value } = await reader.read(); if (done) break; chunks.push(value); got += value.length; onProgress && onProgress(total ? got / total : 0); }
-  const buf = new Uint8Array(got); let o = 0; for (const c of chunks) { buf.set(c, o); o += c.length; }
+  const out = new Uint8Array(got); let o = 0; for (const c of chunks) { out.set(c, o); o += c.length; }
+  return out;
+}
+
+async function loadGLB(onProgress) {
+  const buf = await fetchModel(onProgress);
   const dv = new DataView(buf.buffer), len = dv.getUint32(8, true); let off = 12, json = null, bin = null;
   while (off < len) { const cl = dv.getUint32(off, true), ct = dv.getUint32(off + 4, true); const data = buf.buffer.slice(off + 8, off + 8 + cl); if (ct === 0x4E4F534A) json = JSON.parse(new TextDecoder().decode(data)); else if (ct === 0x004E4942) bin = data; off += 8 + cl; }
   const T = { 5120: Int8Array, 5121: Uint8Array, 5122: Int16Array, 5123: Uint16Array, 5125: Uint32Array, 5126: Float32Array }, N = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 };
@@ -147,7 +203,7 @@ function fitTower(root) { const box = new THREE.Box3().setFromObject(root), size
   const m = new THREE.Matrix4().makeScale(k, k, k).multiply(new THREE.Matrix4().makeTranslation(-ctr.x, -(ctr.y - size.y / 2), -ctr.z)); root.traverse(o => { if (o.isMesh) { o.geometry.applyMatrix4(m); o.geometry.computeBoundingSphere(); } }); }
 function standIn() { const g = new THREE.Group(); let y = 0; for (const [r, h] of [[1.3, 1.5], [1.0, 1.4], [0.78, 1.2], [0.56, 1.0], [0.35, 0.55], [0.14, 0.4]]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.85, r, h, 6), rebord); m.userData.kind = 'rebord'; m.position.y = y + h / 2; g.add(m); y += h; } const s = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.08, H - y, 6), rebord); s.userData.kind = 'rebord'; s.position.y = y + (H - y) / 2; g.add(s); g.updateMatrixWorld(true); g.traverse(o => { if (o.isMesh) o.geometry.applyMatrix4(o.matrixWorld); }); g.children.forEach(c => { c.position.set(0, 0, 0); }); return g; }
 (async () => {
-  let root; try { if (NOMODEL) throw new Error('nomodel'); root = await loadGLB('assets/burj.glb', p => { hint.textContent = `Loading the tower · ${Math.round(p * 100)}%`; }); } catch (e) { console.warn('[tower-v2] GLB unavailable, stand-in massing', e); root = standIn(); }
+  let root; try { if (NOMODEL) throw new Error('nomodel'); root = await loadGLB(p => { hint.textContent = `Loading the tower · ${Math.round(p * 100)}%`; }); } catch (e) { console.warn('[scene] model unavailable, using the stand-in massing', e); root = standIn(); }
   fitTower(root); root.position.y = 0.08; tower.add(root);
   if (FLAT) root.traverse(o => { if (o.isMesh) o.material = o.userData.kind === 'vitres' ? flatVitres : flatRebord; });
   // the reflection is the tower's own lit glass, mirrored (the floods do not reach below the water, so the emissive windows must carry it); tier C skips it
@@ -224,6 +280,7 @@ if (heroEl && 'IntersectionObserver' in window) {
 
 const clock = new THREE.Clock(); let t = STILL ? 4 : 0, fpsShown = 60; const diag = null; const prevCam = new THREE.Vector3(); let prevYaw = 0;
 function frame() {
+  if (skyReady) { skyReady = false; buildEnvironment(); }
   const dt = Math.min(clock.getDelta(), 0.05); if (!STILL) t += dt;
   if (!tierDecided && towerReady && !STILL) { frames++; accum += dt; if (frames === 90) { const ms = accum / frames * 1000; tierDecided = true; if (ms > 40) applyTier('C'); else if (ms > 24) applyTier('B'); } }
   if (!dragging) { const idle = motion && performance.now() - lastInput > 5000; rig.yawVel += ((idle ? 0.02 : 0) - rig.yawVel) * (1 - Math.exp(-dt / (idle ? 2.5 : 0.55))); }

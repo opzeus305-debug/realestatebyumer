@@ -1,0 +1,43 @@
+# Static site — nothing to build, the folder is the deploy.
+[build]
+  publish = "."
+  command = ""
+
+# The model is pre-gzipped and inflated in the browser by js/scene.js. Serve it
+# as an opaque binary: if a host adds Content-Encoding itself the browser will
+# inflate it first, which scene.js detects by the GLB magic and handles.
+[[headers]]
+  for = "/assets/*.glb.gz"
+  [headers.values]
+    Content-Type = "application/octet-stream"
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/*.glb"
+  [headers.values]
+    Content-Type = "model/gltf-binary"
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Fingerprint-free but rarely-changing media and fonts.
+[[headers]]
+  for = "/assets/img/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/assets/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Access-Control-Allow-Origin = "*"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Working files are not part of the site.
+[[redirects]]
+  from = "/_research/*"
+  to = "/404.html"
+  status = 404
