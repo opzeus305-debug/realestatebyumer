@@ -58,15 +58,36 @@ change frequently — see [`_research/INVENTORY.md`](_research/INVENTORY.md).
 
 ## Interaction
 
-The hero tower is drag-to-rotate with momentum, wheel-to-dolly, double-click
-home, and three viewpoints — Base / Full height / Crown — on the controls or
-keys 1/2/3. Everything runs through a spring rig so it arrives with weight.
-The canvas is hidden and the renderer stopped once the hero leaves the screen.
+The hero tower has drag-to-rotate, double-click to reset, and three viewpoints:
+Waterfront / Full height / Crown. The focused model area also accepts arrow
+keys, 1/2/3 for viewpoints, and Space to pause or resume automatic rotation.
+The model sits on a paved waterfront promenade with planting, palms and edge
+lighting, under a dusk sky. The setting is an artistic interpretation.
+
+Desktop retains the original **661,662-triangle model** and native rendering
+resolution up to **2× device pixel ratio**, with antialiasing and adaptive post
+effects. Reducing desktop effects never substitutes the mobile geometry or
+lowers the desktop pixel ratio.
+
+Phones use `assets/burj.mobile.glb.gz`: **56,334 triangles, 705 KB compressed,
+two model draw calls**. This LOD is derived from the original attributed model;
+rebuild with `python _research/build_mobile_model.py` (numpy and
+fast-simplification required). It uses one direct render pass, a 1× pixel ratio,
+and a 30 fps interaction cap. Automatic rotation starts paused on phones and
+for reduced-motion visitors; the renderer rests once interaction settles and
+when its area leaves the screen. The phone model download waits until its area
+approaches the viewport. A photographic hero remains available if WebGL or
+the model fails, with a visible reload control. Temporary WebGL context loss
+recovers automatically when the browser restores it. Three.js r180 is vendored
+under `assets/vendor/three/` with its MIT license, so the model does not depend
+on an external JavaScript CDN.
+
+Append `?diagnostics=1` during development to inspect model selection, quality,
+actual rendered-frame count, triangles and draw calls in `#scene` data attributes.
 
 ## Outstanding
 
-- Optimise `assets/burj.glb` (23.8MB, 661k triangles — needs Draco/decimation
-  via Blender or `gltf-transform`; neither is installed here)
+- The full desktop GLB remains intentionally detailed; the mobile LOD ships separately.
 - Integrate the elevation-rail nav and the full logo motion system from
   `prototype/nav.html` and `prototype/logo.html`
 - Replace remaining stock photography with the client's own
@@ -89,7 +110,7 @@ browser with `DecompressionStream`, so no host configuration is required, and
 falls back to the plain file where that API is missing. Rebuild with
 `python _research/optimize_glb.py`.
 
-Sky: `assets/img/sky-dusk.webp` — a seamless equirectangular dusk sky built
-from `assets/stock/dusk-wide.jpg` (Unsplash) by `_research/make_sky.py`. It is
-both the visible sky and the reflection environment, so the tower's aluminium
-mirrors real cloud rather than a shader ramp.
+Sky: `assets/img/sky-dusk.webp` supplies subtle photographic cloud detail to
+the dusk shader, with a directional warm horizon and cool upper atmosphere.
+The same sky supplies the reflection environment. The source is
+`assets/stock/dusk-wide.jpg` (Unsplash), processed by `_research/make_sky.py`.

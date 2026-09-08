@@ -87,7 +87,7 @@
   --s-1: 4px;  --s-2: 8px;   --s-3: 12px;  --s-4: 16px;
   --s-5: 24px; --s-6: 32px;  --s-7: 48px;  --s-8: 64px;
   --s-9: 96px; --s-10: 128px; --s-11: 192px; --s-12: 256px;
-  --section-y:   clamp(96px, 12vw, 192px);
+  --section-y:   clamp(80px, 9vw, 144px);
   --section-gap: clamp(64px, 8vw, 128px);
   --stack-gap:   clamp(24px, 3vw, 48px);
 
