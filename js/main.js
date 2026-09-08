@@ -61,6 +61,26 @@
   }
   onScrollNav();
 
+  /* Mobile navigation uses the same links and retains native keyboard access. */
+  var menuToggle = document.querySelector('.nav__toggle');
+  var navLinks = document.querySelector('.nav__links');
+  function closeMenu(returnFocus) {
+    nav.classList.remove('is-open');
+    menuToggle.setAttribute('aria-expanded', 'false');
+    if (returnFocus) menuToggle.focus();
+  }
+  menuToggle.addEventListener('click', function () {
+    var open = menuToggle.getAttribute('aria-expanded') !== 'true';
+    menuToggle.setAttribute('aria-expanded', String(open));
+    nav.classList.toggle('is-open', open);
+  });
+  navLinks.addEventListener('click', function (e) { if (e.target.closest('a')) closeMenu(true); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && nav.classList.contains('is-open')) closeMenu(true);
+  });
+  document.addEventListener('click', function (e) { if (!nav.contains(e.target)) closeMenu(false); });
+  nav.addEventListener('focusout', function(e) { if (!nav.contains(e.relatedTarget)) closeMenu(false); });
+
   /* ── Line splitting for headlines (§5.4 — by LINE, never by char) ─── */
   function splitLines(el) {
     if (el.dataset.split === 'done') return;
@@ -231,7 +251,7 @@
     // the logo's spire IS the progress gauge
     marks.forEach(function (el) { el.style.setProperty('--p', prog.toFixed(4)); });
 
-    if (!reduced && platesWrap && plates.length) {
+    if (!reduced && finePointer && platesWrap && plates.length) {
       var r = platesWrap.getBoundingClientRect();
       if (r.bottom > 0 && r.top < window.innerHeight) {
         // -1 .. 1 across the viewport

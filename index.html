@@ -10,10 +10,10 @@
 <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 <link rel="preload" href="assets/fonts/fraunces-var-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/jost-var-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/tokens.css?v=20260908f">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/mark.css">
-<link rel="stylesheet" href="css/sections.css">
+<link rel="stylesheet" href="css/sections.css?v=20260908f">
 <meta property="og:title" content="Umer — Dubai Property &amp; Investment">
 <meta property="og:description" content="The numbers first. Then the view.">
 <meta property="og:type" content="website">
@@ -23,12 +23,12 @@
 <a class="skip-link" href="#main">Skip to content</a>
 
 <div id="preloader"><span class="mark mark--build" id="preMark" aria-hidden="true"></span></div>
-<div id="scene" aria-hidden="true"></div>
 <div class="spire" aria-hidden="true"><div class="spire__fill" id="spireFill"></div></div>
 
 <header class="nav" id="nav">
   <a class="mark nav__mark" id="navMark" href="#top" aria-label="Real Estate by Umer — home"></a>
-  <nav class="nav__links" aria-label="Primary">
+  <button class="nav__toggle" type="button" aria-expanded="false" aria-controls="primaryLinks">Menu <span aria-hidden="true">+</span></button>
+  <nav class="nav__links" id="primaryLinks" aria-label="Primary">
     <a href="#ground">Market</a>
     <a href="#about">About</a>
     <a href="#method">Method</a>
@@ -43,14 +43,32 @@
 
 <!-- ══ LVL 00 · GROUND — HERO ══════════════════════════════════════ -->
 <section class="hero" id="top" data-elev="LVL 00 · GROUND">
+  <div class="hero__visual">
+    <div id="scene" aria-hidden="true"></div>
+    <div class="hero__interaction" tabindex="0" role="group" aria-label="Interactive Burj Khalifa. Drag to rotate. Use left and right arrow keys to rotate, or keys 1, 2 and 3 to change viewpoint."></div>
+    <div class="hero__location"><span class="hero__location-dot"></span> Downtown Dubai <span>Burj Khalifa</span></div>
+    <div class="hero__status" role="status">
+      <span>Preparing the view&hellip;</span>
+      <button type="button" id="sceneRetry" hidden>Reload 3D view <span aria-hidden="true">↻</span></button>
+    </div>
+    <div class="hero__explorer" hidden>
+      <p class="hero__gesture">Drag to explore <span aria-hidden="true">↔</span></p>
+      <div class="views" role="group" aria-label="Tower viewpoints">
+        <button class="viewbtn" type="button" data-view="1" aria-pressed="false">Waterfront</button>
+        <button class="viewbtn" type="button" data-view="2" aria-pressed="true">Full height</button>
+        <button class="viewbtn" type="button" data-view="3" aria-pressed="false">Crown</button>
+        <button class="viewbtn viewbtn--motion" type="button" aria-label="Pause automatic rotation" aria-pressed="false">Pause</button>
+      </div>
+    </div>
+  </div>
   <div class="shell hero__inner">
     <div class="grid">
       <div class="hero__copy">
         <div class="hero__rule r-draw" data-reveal></div>
         <p class="eyebrow hero__eyebrow r-rise" data-reveal>
-          Dubai Property &amp; Investment · Muhammad Umer Riaz
+          Independent perspective. Dubai property.
         </p>
-        <h1 data-reveal-lines>The numbers first. <em>Then the view.</em></h1>
+        <h1 class="r-rise" data-reveal><span>The numbers first.</span> <em>Then the view.</em></h1>
         <p class="lead r-rise" data-reveal style="--delay:120ms">
           Dubai property, read the way a banker reads a balance sheet.
           Sixteen years across finance and real estate. Seventy-plus clients
@@ -62,14 +80,18 @@
           </a>
           <a class="btn btn--ghost" href="#ground">Read the numbers <span class="arw">&darr;</span></a>
         </div>
+        <div class="hero__signature r-rise" data-reveal style="--delay:320ms">
+          <span class="hero__signature-line" aria-hidden="true"></span>
+          <span>Muhammad Umer Riaz <small>MBA · Property Investment Consultant</small></span>
+        </div>
       </div>
     </div>
   </div>
   <div class="hero__rail r-rise" data-reveal style="--delay:400ms">
-    <span><b>AED&nbsp;523.4B</b> transacted</span>
-    <span><b>148,564</b> transactions</span>
-    <span>Jan&ndash;Aug 2026</span>
-    <span>Source: Dubai Land Department</span>
+    <span class="hero__market-label">The market, measured <small>Jan&ndash;Aug 2026 · DLD</small></span>
+    <span><b>AED&nbsp;523.4B</b><small>Total value transacted</small></span>
+    <span><b>148,564</b><small>Property transactions</small></span>
+    <a class="hero__scroll" href="#ground">Explore the evidence <span aria-hidden="true">↓</span></a>
   </div>
 </section>
 
@@ -492,7 +514,7 @@
         </p>
       </div>
 
-      <div class="ledger r-rise" data-reveal>
+      <div class="ledger r-rise" data-reveal tabindex="0" role="region" aria-label="Project comparison. Scroll horizontally to view all columns.">
         <table>
           <caption class="visually-hidden">Available off-plan projects, sizes, starting prices and handover dates</caption>
           <thead>
@@ -653,6 +675,7 @@
       target="_blank" rel="noopener noreferrer">&ldquo;( FREE ) Burj Khalifa Dubai&rdquo;</a>
       by <a href="https://sketchfab.com/3Duae" target="_blank" rel="noopener noreferrer">SDC PERFORMANCE&trade;</a>,
       licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC&nbsp;BY&nbsp;4.0</a>.
+      Materials and landscape adapted; mobile geometry simplified.
       Photography via Unsplash. Project renders are the developer&rsquo;s.
     </p>
     <p class="disclaimer">
@@ -669,14 +692,21 @@
 </footer>
 
 <script type="importmap">
-{ "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
-  } }
+{ "imports": { "three": "./assets/vendor/three/three.module.js" } }
 </script>
-<script type="module" src="js/scene.js"></script>
+<script type="module">
+const retry = document.getElementById('sceneRetry');
+retry.addEventListener('click', () => location.reload());
+import('./js/scene.js?v=20260908f').catch(error => {
+  console.warn('[scene] could not start the 3D view', error);
+  document.querySelector('.hero').classList.add('scene-unavailable');
+  document.querySelector('.hero__interaction').removeAttribute('tabindex');
+  document.querySelector('.hero__status > span').textContent = 'The 3D view could not load.';
+  retry.hidden = false;
+});
+</script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
 <script src="js/mark.js"></script>
-<script src="js/main.js"></script>
+<script src="js/main.js?v=20260908f"></script>
 </body>
 </html>
