@@ -12,6 +12,13 @@ python -m http.server 5173
 # → http://localhost:5173
 ```
 
+## Project at a glance
+
+- **Experience:** an interactive tower, a clear property offering, and enquiry paths for a Dubai consultant.
+- **Engineering:** keyboard controls, separate phone geometry, lazy loading, and a photographic fallback when WebGL is unavailable.
+- **Stack:** HTML, CSS, JavaScript, vendored Three.js, and Python asset tools.
+- **Status:** implementation in progress; client imagery and price verification are still outstanding. See [Outstanding](#outstanding).
+
 ## Structure
 
 | Path | What it is |
